@@ -8,6 +8,7 @@ import { NumberAttr, StringAttr, TextAttr, FontAttr } from "./attribute";
 import { linebreak, isCjk } from "./text";
 import { LabelCandidate, lineCells, simpleLabel } from "./line";
 import { Index, Label, Layout } from "./labeler";
+import { normalize, Vector } from "./maths";
 
 // https://bugs.webkit.org/show_bug.cgi?id=230751
 const MAX_VERTICES_PER_DRAW_CALL = 5400;
@@ -957,6 +958,188 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
     }
 
     return labels;
+  }
+}
+
+export interface LabelCandidateWithText extends LabelCandidate {
+  text: string;
+}
+
+export class CurvedLabelSymbolizer extends LineLabelSymbolizer {
+  constructor(options: any) {
+    super(options);
+  }
+
+  public place(layout: Layout, geom: Point[][], feature: Feature) {
+    let name = this.text.get(layout.zoom, feature);
+    if (this.canBeRendered(name, layout, feature)) {
+      const { width, height, cellSize, font } = this.getTextMetrics(
+        layout,
+        feature
+      );
+      const repeatDistance = this.getRepeatDistance(layout, feature);
+      const labelCandidates = this.curvedLabel(
+        feature,
+        name,
+        layout,
+        geom,
+        repeatDistance,
+        cellSize
+      );
+      if (labelCandidates.length !== 0) {
+        return this.renderLabelCandidates(
+          labelCandidates,
+          (c) => (c as LabelCandidateWithText).text,
+          layout,
+          feature,
+          font,
+          width,
+          height,
+          cellSize,
+          repeatDistance,
+          true
+        );
+      }
+    }
+    return undefined;
+  }
+
+  private curvedLabel(
+    feature: Feature,
+    name: string,
+    layout: Layout,
+    geom: Point[][],
+    repeatDistance: number,
+    cellSize: number
+  ): LabelCandidateWithText[] {
+    const candidates = [];
+    const chars = [...name];
+    const vertices = geom[0];
+    const vectors: Vector[] = [];
+    let totalLineLength = 0;
+
+    // Compute each line segment length and vector
+    const segmentLengths = vertices.slice(0, -1).map((v, i) => {
+      const vector = {
+        x: vertices[i + 1].x - vertices[i].x,
+        y: vertices[i + 1].y - vertices[i].y,
+      };
+      vectors.push(vector);
+      const length = Math.hypot(vector.x, vector.y);
+      totalLineLength += length;
+      return length;
+    });
+    const font = this.font.get(layout.zoom, feature);
+    layout.scratch.font = font;
+    const totalTextLength = layout.scratch.measureText(name).width;
+
+    //Early return if text doesn't fit in line
+    if (totalLineLength < totalTextLength) return [];
+
+    // Compute an array that contains the length between the text start and
+    // char i on the i-th position. We compute the metrics of all the text
+    // instead of doing it char by char to account for text-spacing
+    const accumTextMetrics: number[] = [];
+    for (let charIdx = 0; charIdx < chars.length - 1; ++charIdx) {
+      const currentTextMetrics = layout.scratch.measureText(
+        name.slice(0, charIdx + 1)
+      );
+      accumTextMetrics.push(currentTextMetrics.width);
+    }
+    accumTextMetrics.push(totalTextLength);
+
+    let currentSegmentIdx = 0;
+    let distanceBetweenRenders = repeatDistance;
+    let remainingTextToRenderCharIdx = 0;
+    let lastRenderedLength = 0;
+    let remainingLineLength = totalLineLength;
+    for (; currentSegmentIdx < vertices.length - 1; ++currentSegmentIdx) {
+      remainingLineLength -= segmentLengths[currentSegmentIdx];
+      if (distanceBetweenRenders >= repeatDistance) {
+        if (totalTextLength < segmentLengths[currentSegmentIdx]) {
+          // The whole text fits into this segment, create
+          // candidates on it
+          const segmentCandidates: LabelCandidate[] = simpleLabel(
+            [[vertices[currentSegmentIdx], vertices[currentSegmentIdx + 1]]],
+            totalTextLength,
+            repeatDistance,
+            cellSize
+          );
+          const segmentCandidatesWithText = segmentCandidates.map((c) => {
+            return {
+              ...c,
+              text: name,
+            };
+          });
+          candidates.push(...segmentCandidatesWithText);
+        } else if (
+          remainingTextToRenderCharIdx < chars.length &&
+          remainingLineLength >= totalTextLength
+        ) {
+          // There are chars pending to render into this segment and
+          // there's enough place for another text instance
+          let breakCharIdx = remainingTextToRenderCharIdx;
+          const startMetrics =
+            accumTextMetrics[remainingTextToRenderCharIdx - 1] || 0;
+          // Find the character where the text needs to be split. In order to
+          // minimize gaps between segments we always render an extra character.
+          // This means that on the next segment we'll need to take that into account
+          while (
+            accumTextMetrics[breakCharIdx] - startMetrics <
+              segmentLengths[currentSegmentIdx] &&
+            breakCharIdx < chars.length - 1
+          ) {
+            breakCharIdx++;
+          }
+          // Add the extra space on the old segment into the new one
+          // as the initial offset on the starting point so letters don't overlap
+          const extraSpaceOnSegment = Math.max(
+            0,
+            lastRenderedLength - (segmentLengths[currentSegmentIdx - 1] || 0)
+          );
+          lastRenderedLength =
+            accumTextMetrics[breakCharIdx] -
+            (accumTextMetrics[remainingTextToRenderCharIdx - 1] || 0);
+          const offsetX = extraSpaceOnSegment;
+          const offsetY = extraSpaceOnSegment;
+          const normalizedVector = normalize(vectors[currentSegmentIdx]);
+          const start = {
+            x: vertices[currentSegmentIdx].x + offsetX * normalizedVector.x,
+            y: vertices[currentSegmentIdx].y + offsetY * normalizedVector.y,
+          };
+          // Create candidates on this line using the initial point
+          // computed before as the initial vertex
+          const textToRender = name.slice(
+            remainingTextToRenderCharIdx,
+            breakCharIdx + 1
+          );
+          const segmentCandidates: LabelCandidate[] = simpleLabel(
+            [[start, vertices[currentSegmentIdx + 1]]],
+            accumTextMetrics[breakCharIdx] -
+              (accumTextMetrics[remainingTextToRenderCharIdx - 1] || 0),
+            repeatDistance,
+            cellSize,
+            true
+          );
+          const segmentCandidatesWithText = segmentCandidates.map((c) => {
+            return {
+              ...c,
+              text: textToRender,
+            };
+          });
+          candidates.push(...segmentCandidatesWithText);
+          remainingTextToRenderCharIdx = breakCharIdx + 1;
+          if (remainingTextToRenderCharIdx >= chars.length) {
+            distanceBetweenRenders = 0;
+            lastRenderedLength = 0;
+            remainingTextToRenderCharIdx = 0;
+          }
+        } else {
+          distanceBetweenRenders += segmentLengths[currentSegmentIdx];
+        }
+      }
+    }
+    return candidates;
   }
 }
 

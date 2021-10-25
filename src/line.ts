@@ -98,7 +98,8 @@ export function simpleLabel(
   mls: any,
   minimum: number,
   repeatDistance: number,
-  cellSize: number
+  cellSize: number,
+  overflowAllowed = false
 ): LabelCandidate[] {
   let longestStart;
   let longestEnd;
@@ -111,7 +112,7 @@ export function simpleLabel(
   for (let ls of mls) {
     let segments = linelabel(ls, Math.PI / 90); // 2 degrees, close to a straight line
     for (let segment of segments) {
-      if (segment.length >= minimum + cellSize) {
+      if (segment.length >= minimum + cellSize || overflowAllowed) {
         let start = new Point(
           ls[segment.beginIndex].x,
           ls[segment.beginIndex].y
@@ -125,8 +126,8 @@ export function simpleLabel(
         // offset from the start by cellSize to allow streets that meet at right angles
         // to both be labeled.
         for (
-          var i = cellSize;
-          i < segment.length - minimum;
+          var i = overflowAllowed ? 0 : cellSize;
+          i < segment.length - (overflowAllowed ? 0 : minimum);
           i += repeatDistance
         ) {
           candidates.push({
