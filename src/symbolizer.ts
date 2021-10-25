@@ -6,7 +6,7 @@ import { GeomType, Feature, Bbox } from "./tilecache";
 import polylabel from "polylabel";
 import { NumberAttr, StringAttr, TextAttr, FontAttr } from "./attribute";
 import { linebreak, isCjk } from "./text";
-import { lineCells, simpleLabel } from "./line";
+import { LabelCandidate, lineCells, simpleLabel } from "./line";
 import { Index, Label, Layout } from "./labeler";
 
 // https://bugs.webkit.org/show_bug.cgi?id=230751
@@ -810,35 +810,82 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
 
   public place(layout: Layout, geom: Point[][], feature: Feature) {
     let name = this.text.get(layout.zoom, feature);
-    if (!name) return undefined;
-    if (name.length > this.maxLabelCodeUnits.get(layout.zoom, feature))
-      return undefined;
+    if (this.canBeRendered(name, layout, feature)) {
+      const { width, height, cellSize, font } = this.getTextMetrics(
+        layout,
+        feature
+      );
+      const repeatDistance = this.getRepeatDistance(layout, feature);
+      const labelCandidates = simpleLabel(
+        geom,
+        width,
+        repeatDistance,
+        cellSize
+      );
+      if (labelCandidates.length !== 0) {
+        return this.renderLabelCandidates(
+          labelCandidates,
+          () => name,
+          layout,
+          feature,
+          font,
+          width,
+          height,
+          cellSize,
+          repeatDistance
+        );
+      }
+    }
+    return undefined;
+  }
 
-    let MIN_LABELABLE_DIM = 20;
-    let fbbox = feature.bbox;
-    if (
-      fbbox.maxY - fbbox.minY < MIN_LABELABLE_DIM &&
-      fbbox.maxX - fbbox.minX < MIN_LABELABLE_DIM
-    )
-      return undefined;
+  protected canBeRendered(name: string, layout: Layout, feature: Feature) {
+    const MIN_LABELABLE_DIM = 20;
+    const fbbox = feature.bbox;
+    const validName =
+      name && name.length <= this.maxLabelCodeUnits.get(layout.zoom, feature);
+    const validDimensions =
+      fbbox.maxY - fbbox.minY >= MIN_LABELABLE_DIM &&
+      fbbox.maxX - fbbox.minX >= MIN_LABELABLE_DIM;
+    return validName && validDimensions;
+  }
 
-    let font = this.font.get(layout.zoom, feature);
+  protected getTextMetrics(layout: Layout, feature: Feature) {
+    const font = this.font.get(layout.zoom, feature);
+    const name = feature.props.name;
     layout.scratch.font = font;
-    let metrics = layout.scratch.measureText(name);
-    let width = metrics.width;
-    let height =
+    const metrics = layout.scratch.measureText(name);
+    const width = metrics.width;
+    const height =
       metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
 
-    var repeatDistance = this.repeatDistance.get(layout.zoom, feature);
+    const cellSize = height * 2;
+
+    return { width, height, cellSize, font };
+  }
+
+  protected getRepeatDistance(layout: Layout, feature: Feature) {
+    let repeatDistance = this.repeatDistance.get(layout.zoom, feature);
     if (layout.overzoom > 4) repeatDistance *= 1 << (layout.overzoom - 4);
+    return repeatDistance;
+  }
 
-    let cell_size = height * 2;
-
-    let label_candidates = simpleLabel(geom, width, repeatDistance, cell_size);
-    if (label_candidates.length == 0) return undefined;
-
-    let labels = [];
-    for (let candidate of label_candidates) {
+  protected renderLabelCandidates(
+    labelCandidates: LabelCandidate[],
+    getName: (candidate: LabelCandidate | LabelCandidateWithText) => string,
+    layout: Layout,
+    feature: Feature,
+    font: string,
+    width: number,
+    height: number,
+    cellSize: number,
+    repeatDistance: number,
+    allowCollisions = false
+  ) {
+    const labels = [];
+    for (let candidate of labelCandidates) {
+      const name = getName(candidate);
+      const completeText = feature.props.name;
       let dx = candidate.end.x - candidate.start.x;
       let dy = candidate.end.y - candidate.start.y;
 
@@ -846,14 +893,14 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
         candidate.start,
         candidate.end,
         width,
-        cell_size / 2
+        cellSize / 2
       );
       let bboxes = cells.map((c) => {
         return {
-          minX: c.x - cell_size / 2,
-          minY: c.y - cell_size / 2,
-          maxX: c.x + cell_size / 2,
-          maxY: c.y + cell_size / 2,
+          minX: c.x - cellSize / 2,
+          minY: c.y - cellSize / 2,
+          maxX: c.x + cellSize / 2,
+          maxY: c.y + cellSize / 2,
         };
       });
 
@@ -904,6 +951,8 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
         draw: draw,
         deduplicationKey: name,
         deduplicationDistance: repeatDistance,
+        allowCollisions: allowCollisions,
+        collisionKey: completeText,
       });
     }
 
