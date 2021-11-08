@@ -1,7 +1,7 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 import simplify from "simplify-js";
-import PolygonClipping, { Polygon } from "polygon-clipping";
+import PolygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
 import { Bbox } from "./tilecache";
 
 export const splitMultiLineString = (mls: Point[][], maxVertices: number) => {
@@ -33,7 +33,8 @@ const verticesCount = (rings: Point[][]): number => {
 };
 
 export const splitMultiPolygon = (mp: Point[][], bbox: Bbox) => {
-  const flat = mp.map((m) => m.map((p) => [p.x, p.y]));
+  if (typeof mp[0][0].x === "number") mp = [mp];
+  const arrays = mp.map((m) => m.map((pl) => pl.map((p: Point) => [p.x, p.y])));
   const centerPoint = {
     x: (bbox.minX + bbox.maxX) / 2,
     y: (bbox.minY + bbox.maxY) / 2,
@@ -70,10 +71,20 @@ export const splitMultiPolygon = (mp: Point[][], bbox: Bbox) => {
       [bbox.maxX, centerPoint.y],
     ],
   ];
-  const firstQuadrant = PolygonClipping.intersection(flat, nw as Polygon);
-  const secondQuadrant = PolygonClipping.intersection(flat, ne as Polygon);
-  const thirdQuadrant = PolygonClipping.intersection(flat, se as Polygon);
-  const fourthQuadrant = PolygonClipping.intersection(flat, sw as Polygon);
+  const firstQuadrant = PolygonClipping.intersection(arrays, ne as Polygon).map(
+    (m) => m.map((pl) => pl.map((p) => new Point(p[0], p[1])))
+  );
+  const secondQuadrant = PolygonClipping.intersection(
+    arrays,
+    nw as Polygon
+  ).map((m) => m.map((pl) => pl.map((p) => new Point(p[0], p[1]))));
+  const thirdQuadrant = PolygonClipping.intersection(arrays, sw as Polygon).map(
+    (m) => m.map((pl) => pl.map((p) => new Point(p[0], p[1])))
+  );
+  const fourthQuadrant = PolygonClipping.intersection(
+    arrays,
+    se as Polygon
+  ).map((m) => m.map((pl) => pl.map((p) => new Point(p[0], p[1]))));
   return [firstQuadrant, secondQuadrant, thirdQuadrant, fourthQuadrant];
 };
 

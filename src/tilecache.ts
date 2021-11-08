@@ -97,9 +97,10 @@ function parseTile(
     let features = [];
     let layer = value as any;
     for (let i = 0; i < layer.length; i++) {
+      const feature = layer.feature(i);
       let result = loadGeomAndBbox(
-        layer.feature(i)._pbf,
-        layer.feature(i)._geometry,
+        feature._pbf,
+        feature._geometry,
         tileSize / layer.extent
       );
       let numVertices = 0;
@@ -107,32 +108,33 @@ function parseTile(
 
       let LIMIT = 5400;
       let split: Point[][] = [];
-      if (numVertices > LIMIT && layer.feature(i).type != GeomType.Point) {
+      if (numVertices > LIMIT && feature.type != GeomType.Point) {
         console.log(key);
-        if (layer.feature(i).type == GeomType.Line) {
+        if (feature.type == GeomType.Line) {
           split = splitMultiLineString(result.geom, LIMIT);
-        } else if (layer.feature(i).type == GeomType.Polygon) {
+        } else if (feature.type == GeomType.Polygon) {
+          // console.log(feature.toGeoJSON(82, 197, 9))
           split = splitMultiPolygon(result.geom, result.bbox);
         }
 
         for (let part of split) {
           features.push({
-            id: layer.feature(i).id,
-            geomType: layer.feature(i).type,
+            id: feature.id,
+            geomType: feature.type,
             geom: part,
             numVertices: numVertices,
             bbox: result.bbox,
-            props: layer.feature(i).properties,
+            props: feature.properties,
           });
         }
       } else {
         features.push({
-          id: layer.feature(i).id,
-          geomType: layer.feature(i).type,
+          id: feature.id,
+          geomType: feature.type,
           geom: result.geom,
           numVertices: numVertices,
           bbox: result.bbox,
-          props: layer.feature(i).properties,
+          props: feature.properties,
         });
       }
     }
