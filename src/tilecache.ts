@@ -89,7 +89,8 @@ const loadGeomAndBbox = (pbf: any, geometry: number, scale: number) => {
 
 function parseTile(
   buffer: ArrayBuffer,
-  tileSize: number
+  tileSize: number,
+  shouldSplitGeometries = false
 ): Map<string, Feature[]> {
   let v = new VectorTile(new Protobuf(buffer));
   let result = new Map<string, Feature[]>();
@@ -104,28 +105,7 @@ function parseTile(
       );
       let numVertices = 0;
       for (let part of result.geom) numVertices += part.length;
-
-      let LIMIT = 5400;
-      let split: Point[][] = [];
-      if (numVertices > LIMIT && layer.feature(i).type != GeomType.Point) {
-        console.log(key);
-        if (layer.feature(i).type == GeomType.Line) {
-          split = splitMultiLineString(result.geom, LIMIT);
-        } else if (layer.feature(i).type == GeomType.Polygon) {
-          split = splitMultiPolygon(result.geom, result.bbox);
-        }
-
-        for (let part of split) {
-          features.push({
-            id: layer.feature(i).id,
-            geomType: layer.feature(i).type,
-            geom: part,
-            numVertices: numVertices,
-            bbox: result.bbox,
-            props: layer.feature(i).properties,
-          });
-        }
-      } else {
+      if (!shouldSplitGeometries) {
         features.push({
           id: layer.feature(i).id,
           geomType: layer.feature(i).type,
@@ -134,6 +114,37 @@ function parseTile(
           bbox: result.bbox,
           props: layer.feature(i).properties,
         });
+      } else {
+        let LIMIT = 5400;
+        let split: Point[][] = [];
+        if (numVertices > LIMIT && layer.feature(i).type != GeomType.Point) {
+          console.log(key);
+          if (layer.feature(i).type == GeomType.Line) {
+            split = splitMultiLineString(result.geom, LIMIT);
+          } else if (layer.feature(i).type == GeomType.Polygon) {
+            split = splitMultiPolygon(result.geom, result.bbox);
+          }
+
+          for (let part of split) {
+            features.push({
+              id: layer.feature(i).id,
+              geomType: layer.feature(i).type,
+              geom: part,
+              numVertices: numVertices,
+              bbox: result.bbox,
+              props: layer.feature(i).properties,
+            });
+          }
+        } else {
+          features.push({
+            id: layer.feature(i).id,
+            geomType: layer.feature(i).type,
+            geom: result.geom,
+            numVertices: numVertices,
+            bbox: result.bbox,
+            props: layer.feature(i).properties,
+          });
+        }
       }
     }
     result.set(key, features);
