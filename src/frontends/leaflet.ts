@@ -291,14 +291,17 @@ const leafletLayer = (options: any): any => {
 
     public rerenderTiles() {
       this.fire(ProtomapsEvent.RerenderStart);
+      const promises = [];
       for (let unwrapped_k in this._tiles) {
         let wrapped_coord = this._wrapCoords(
           this._keyToTileCoords(unwrapped_k)
         );
         let key = this._tileCoordsToKey(wrapped_coord);
-        this.renderTile(wrapped_coord, this._tiles[unwrapped_k].el, key);
+        promises.push(
+          this.renderTile(wrapped_coord, this._tiles[unwrapped_k].el, key)
+        );
       }
-      this.fire(ProtomapsEvent.RerenderEnd);
+      Promise.all(promises).then(() => this.fire(ProtomapsEvent.RerenderEnd));
     }
 
     public createTile(coords: any, showTile: any) {
