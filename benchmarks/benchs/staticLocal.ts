@@ -1,5 +1,5 @@
 import { Benchmark } from "@feltmaps/benchmarking";
-import { Static } from "../../dist/index";
+import { Static } from "protomaps-local";
 export default class StaticMap extends Benchmark {
   async bench() {
     const map = new Static({
