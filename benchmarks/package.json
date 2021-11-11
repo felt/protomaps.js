@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "@feltmaps/benchmarking": "^1.0.2",
-    "protomaps": "^1.15.0"
+    "@feltmaps/protomaps": "^1.9.0",
+    "@types/leaflet": "^1.7.5",
+    "leaflet": "^1.7.1"
   }
 }
