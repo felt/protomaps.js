@@ -1,5 +1,6 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
+import { EventQueue, ProtomapsEvent } from "./events";
 import { Zxy, TileCache, Feature, Bbox } from "./tilecache";
 
 /*
@@ -58,11 +59,18 @@ export class View {
   levelDiff: number;
   tileCache: TileCache;
   maxDataLevel: number;
+  eventQueue?: EventQueue;
 
-  constructor(tileCache: TileCache, maxDataLevel: number, levelDiff: number) {
+  constructor(
+    tileCache: TileCache,
+    maxDataLevel: number,
+    levelDiff: number,
+    eventQueue?: EventQueue
+  ) {
     this.tileCache = tileCache;
     this.maxDataLevel = maxDataLevel;
     this.levelDiff = levelDiff;
+    this.eventQueue = eventQueue;
   }
 
   public dataTilesForBounds(
@@ -178,10 +186,12 @@ export class View {
     display_zoom: number,
     bounds: Bbox
   ): Promise<Array<PreparedTile>> {
+    this.eventQueue?.publish(ProtomapsEvent.TileFetchStart);
     let needed = this.dataTilesForBounds(display_zoom, bounds);
     let result = await Promise.all(
       needed.map((tt) => this.tileCache.get(tt.data_tile))
     );
+    this.eventQueue?.publish(ProtomapsEvent.TileFetchEnd);
     return result.map((data, i) => {
       let tt = needed[i];
       return {

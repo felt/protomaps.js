@@ -10,6 +10,7 @@ import { Labelers } from "../labeler";
 import { light } from "../default_style/light";
 import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
+import { EventQueue, ProtomapsEvent } from "../events";
 
 class CanvasPool {
   unused: any[];
@@ -104,10 +105,11 @@ const leafletLayer = (options: any): any => {
       }
 
       this.levelDiff = options.levelDiff === undefined ? 2 : options.levelDiff;
-
+      this.eventQueue = new EventQueue();
+      this.subscribeChildEvents();
       this.tasks = options.tasks || [];
       let cache = new TileCache(source, (256 * 1) << this.levelDiff);
-      this.view = new View(cache, maxDataZoom, this.levelDiff);
+      this.view = new View(cache, maxDataZoom, this.levelDiff, this.eventQueue);
       this.debug = options.debug;
       let scratch = document.createElement("canvas").getContext("2d");
       this.scratch = scratch;
@@ -288,6 +290,7 @@ const leafletLayer = (options: any): any => {
     }
 
     public rerenderTiles() {
+      this.fire(ProtomapsEvent.RerenderStart);
       for (let unwrapped_k in this._tiles) {
         let wrapped_coord = this._wrapCoords(
           this._keyToTileCoords(unwrapped_k)
@@ -295,6 +298,7 @@ const leafletLayer = (options: any): any => {
         let key = this._tileCoordsToKey(wrapped_coord);
         this.renderTile(wrapped_coord, this._tiles[unwrapped_k].el, key);
       }
+      this.fire(ProtomapsEvent.RerenderEnd);
     }
 
     public createTile(coords: any, showTile: any) {
@@ -361,6 +365,15 @@ const leafletLayer = (options: any): any => {
 
     public removeInspector(map: any) {
       return map.off("click", this.inspector);
+    }
+
+    private subscribeChildEvents() {
+      this.eventQueue.subscribe(ProtomapsEvent.TileFetchStart, this.fireEvent);
+      this.eventQueue.subscribe(ProtomapsEvent.TileFetchEnd, this.fireEvent);
+    }
+
+    private fireEvent(e: ProtomapsEvent) {
+      this.fire(e);
     }
   }
   return new LeafletLayer(options);
