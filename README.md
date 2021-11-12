@@ -52,6 +52,9 @@ Exports of OpenStreetMap data in PMTiles format can be obtained from [https://pr
 * Go into the `benchmarks` folder and run `npm install` and `npm run start`.
 * If you want to add benchmarks, take a look at the `benchmarks/benchs/benchmarks.ts` file
 
+## Benchmarking the felt style
+* Felt benchmarking is done in the `map-benchmarks` private repo. That compares the last `@feltmaps/protomaps` published package against the `benchmarking-base` branch of this repo
+
 ## Project Status
 
 The design is still evolving rapidly, so do not expect any kind of stable internal or external-facing API between minor versions. But please do report bugs and discuss requirements in the Issues.
