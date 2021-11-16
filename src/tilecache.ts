@@ -90,7 +90,7 @@ const loadGeomAndBbox = (pbf: any, geometry: number, scale: number) => {
 function parseTile(
   buffer: ArrayBuffer,
   tileSize: number,
-  shouldSplitGeometries = false
+  shouldSplitGeometries = true
 ): Map<string, Feature[]> {
   let v = new VectorTile(new Protobuf(buffer));
   let result = new Map<string, Feature[]>();
