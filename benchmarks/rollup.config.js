@@ -49,7 +49,7 @@ const getConfig = (input, output) => {
       }),
       buble({
         transforms: {
-          dangerousForOf: true,
+          forOf: false,
           generator: false,
           asyncAwait: false,
         },
