@@ -130,7 +130,7 @@ const simplifyRing = (ring: number[][], pointsToKeep: number) => {
   let triangles = [];
   for (var i = 1, n = ring.length - 1; i < n; ++i) {
     triangle = ring.slice(i - 1, i + 2);
-    if ((triangle[1].area = area(triangle))) {
+    if (triangle.length !== 0 && (triangle[1].area = area(triangle))) {
       triangles.push(triangle);
       heap.push(triangle);
     }
