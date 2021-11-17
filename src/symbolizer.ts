@@ -289,7 +289,7 @@ export class LineSymbolizer implements PaintSymbolizer {
     geom.forEach((ls) => {
       ctx.moveTo(ls[0].x, ls[0].y);
       ls.forEach((pt) => {
-        ctx.lineTo(pt.x, pt.y);
+        ctx.lineTo((0.5 + pt.x) << 0, (0.5 + pt.y) << 0);
       });
       vertices_in_path += ls.length;
     });
