@@ -264,46 +264,43 @@ export class LineSymbolizer implements PaintSymbolizer {
   public draw(ctx: any, geom: Point[][], z: number, f: Feature) {
     if (this.skip) return;
 
-    let strokePath = () => {
+    const setStyle = () => {
       if (this.per_feature) {
         ctx.globalAlpha = this.opacity.get(z, f);
         ctx.lineCap = this.lineCap.get(z, f);
         ctx.lineJoin = this.lineJoin.get(z, f);
       }
       if (this.dash) {
-        ctx.save();
         ctx.lineWidth = this.dashWidth.get(z, f);
         ctx.strokeStyle = this.dashColor.get(z, f);
         ctx.setLineDash(this.dash.get(z, f));
-        ctx.stroke();
-        ctx.restore();
       } else {
-        ctx.save();
         if (this.per_feature) {
           ctx.lineWidth = this.width.get(z, f);
           ctx.strokeStyle = this.color.get(z, f);
         }
-        ctx.stroke();
-        ctx.restore();
       }
     };
 
     var vertices_in_path = 0;
+    ctx.save();
     ctx.beginPath();
+    setStyle();
     for (var ls of geom) {
       if (vertices_in_path + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
-        strokePath();
+        ctx.stroke();
         vertices_in_path = 0;
         ctx.beginPath();
       }
-      for (var p = 0; p < ls.length; p++) {
+      ctx.moveTo(ls[0].x, ls[0].y);
+      for (var p = 1; p < ls.length; p++) {
         let pt = ls[p];
-        if (p == 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
+        ctx.lineTo(pt.x, pt.y);
       }
       vertices_in_path += ls.length;
     }
-    if (vertices_in_path > 0) strokePath();
+    if (vertices_in_path > 0) ctx.stroke();
+    ctx.restore();
   }
 }
 
