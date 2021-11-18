@@ -283,18 +283,24 @@ export class LineSymbolizer implements PaintSymbolizer {
     };
 
     var vertices_in_path = 0;
-    //ctx.save();
+    ctx.save();
     ctx.beginPath();
-    //setStyle();
-    geom.forEach((ls) => {
+    setStyle();
+    for (var ls of geom) {
+      if (vertices_in_path + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+        ctx.stroke();
+        vertices_in_path = 0;
+        ctx.beginPath();
+      }
       ctx.moveTo(ls[0].x, ls[0].y);
-      ls.forEach((pt) => {
-        ctx.lineTo((0.5 + pt.x) << 0, (0.5 + pt.y) << 0);
-      });
+      for (var p = 1; p < ls.length; p++) {
+        let pt = ls[p];
+        ctx.lineTo(pt.x, pt.y);
+      }
       vertices_in_path += ls.length;
-    });
+    }
     if (vertices_in_path > 0) ctx.stroke();
-    //ctx.restore();
+    ctx.restore();
   }
 }
 
