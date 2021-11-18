@@ -172,22 +172,39 @@ export function painter(
       if (layer === undefined) continue;
       if (rule.symbolizer.before) rule.symbolizer.before(ctx, prepared_tile.z);
 
-      for (var feature of layer) {
-        let geom = feature.geom;
-        let fbox = feature.bbox;
-        if (
-          fbox.maxX * ps + po.x < bbox.minX ||
-          fbox.minX * ps + po.x > bbox.maxX ||
-          fbox.minY * ps + po.y > bbox.maxY ||
-          fbox.maxY * ps + po.y < bbox.minY
-        ) {
-          continue;
+      if (rule.symbolizer.drawGrouped && rule.symbolizer.groupGeometries) {
+        const grouped = rule.symbolizer.groupGeometries(
+          layer.filter((f) => !rule.filter || rule.filter(prepared_tile.z, f)),
+          po,
+          bbox,
+          ps
+        );
+        rule.symbolizer.drawGrouped(
+          ctx,
+          ps != 1
+            ? grouped.geoms.map((g) => transformGeom(g, ps, new Point(0, 0)))
+            : grouped.geoms,
+          prepared_tile.z,
+          grouped.features
+        );
+      } else {
+        for (var feature of layer) {
+          let geom = feature.geom;
+          let fbox = feature.bbox;
+          if (
+            fbox.maxX * ps + po.x < bbox.minX ||
+            fbox.minX * ps + po.x > bbox.maxX ||
+            fbox.minY * ps + po.y > bbox.maxY ||
+            fbox.maxY * ps + po.y < bbox.minY
+          ) {
+            continue;
+          }
+          if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
+          if (ps != 1) {
+            geom = transformGeom(geom, ps, new Point(0, 0));
+          }
+          rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
         }
-        if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
-        if (ps != 1) {
-          geom = transformGeom(geom, ps, new Point(0, 0));
-        }
-        rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
       }
     }
     ctx.restore();

@@ -18,9 +18,21 @@ import { Index, Label, Layout } from "./labeler";
 // https://bugs.webkit.org/show_bug.cgi?id=230751
 const MAX_VERTICES_PER_DRAW_CALL = 5400;
 
+export interface GroupedGeometries {
+  geoms: Point[][][];
+  features: Feature[];
+}
+
 export interface PaintSymbolizer {
   before?(ctx: any, z: number): void;
   draw(ctx: any, geom: Point[][], z: number, feature: Feature): void;
+  drawGrouped?(ctx: any, geom: Point[][], z: number, features: Feature[]): void;
+  groupGeometries?(
+    features: Feature[],
+    origin: Point,
+    bbox: Bbox,
+    scale: number
+  ): GroupedGeometries;
 }
 
 export enum Justify {
@@ -301,6 +313,99 @@ export class LineSymbolizer implements PaintSymbolizer {
     }
     if (vertices_in_path > 0) ctx.stroke();
     ctx.restore();
+  }
+
+  public groupGeometries(
+    features: Feature[],
+    origin: Point,
+    bbox: Bbox,
+    scale: number
+  ): GroupedGeometries {
+    const group: GroupedGeometries = { geoms: [], features: [] };
+    const allFeaturesAreLines = features.every(
+      (feature) => feature.geomType === GeomType.Line
+    );
+    if (allFeaturesAreLines) {
+      const validLines = [];
+      const groupedLines: any[] = [[]];
+      const groupedFeatures: Feature[] = [];
+      for (var feature of features) {
+        let fbox = feature.bbox;
+        if (
+          fbox.maxX * scale + origin.x >= bbox.minX ||
+          fbox.minX * scale + origin.x <= bbox.maxX ||
+          fbox.minY * scale + origin.y <= bbox.maxY ||
+          fbox.maxY * scale + origin.y >= bbox.minY
+        ) {
+          validLines.push(feature);
+        }
+      }
+      let accumVertices = 0;
+      groupedFeatures.push(validLines[0]);
+      validLines.forEach((f) => {
+        const geom = f.geom;
+        geom.forEach((ls) => {
+          if (accumVertices + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+            accumVertices = ls.length;
+            groupedLines.push([ls]);
+            groupedFeatures.push(f);
+          } else {
+            groupedLines[groupedLines.length - 1].push(ls);
+            accumVertices += ls.length;
+          }
+        });
+      });
+      group.geoms = groupedLines;
+      group.features = groupedFeatures;
+    } else {
+      group.geoms = features.map((f) => f.geom);
+      group.features = features;
+    }
+    return group;
+  }
+
+  public drawGrouped(
+    ctx: any,
+    geoms: Point[][][],
+    z: number,
+    features: Feature[]
+  ) {
+    if (this.skip) return;
+
+    const setStyle = (zoom: number, feature: Feature) => {
+      if (this.per_feature) {
+        ctx.globalAlpha = this.opacity.get(zoom, feature);
+        ctx.lineCap = this.lineCap.get(zoom, feature);
+        ctx.lineJoin = this.lineJoin.get(zoom, feature);
+      }
+      if (this.dash) {
+        ctx.lineWidth = this.dashWidth.get(zoom, feature);
+        ctx.strokeStyle = this.dashColor.get(zoom, feature);
+        ctx.setLineDash(this.dash.get(zoom, feature));
+      } else {
+        if (this.per_feature) {
+          ctx.lineWidth = this.width.get(zoom, feature);
+          ctx.strokeStyle = this.color.get(zoom, feature);
+        }
+      }
+    };
+
+    var vertices_in_path = 0;
+    geoms.forEach((geom, index) => {
+      ctx.save();
+      ctx.beginPath();
+      setStyle(z, features[index]);
+      for (var ls of geom) {
+        ctx.moveTo(ls[0].x, ls[0].y);
+        for (var p = 1; p < ls.length; p++) {
+          let pt = ls[p];
+          ctx.lineTo(pt.x, pt.y);
+        }
+        vertices_in_path += ls.length;
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
   }
 }
 
