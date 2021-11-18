@@ -322,39 +322,38 @@ export class LineSymbolizer implements PaintSymbolizer {
     scale: number
   ): GroupedGeometries {
     const group: GroupedGeometries = { geoms: [], features: [] };
-    const allFeaturesAreLines = features.every(
-      (feature) => feature.geomType === GeomType.Line
-    );
-    if (allFeaturesAreLines) {
-      const validLines = [];
-      const groupedLines: any[] = [[]];
-      const groupedFeatures: Feature[] = [];
-      for (var feature of features) {
-        let fbox = feature.bbox;
-        if (
-          fbox.maxX * scale + origin.x >= bbox.minX ||
-          fbox.minX * scale + origin.x <= bbox.maxX ||
-          fbox.minY * scale + origin.y <= bbox.maxY ||
-          fbox.maxY * scale + origin.y >= bbox.minY
-        ) {
-          validLines.push(feature);
-        }
-      }
-      let accumVertices = 0;
-      groupedFeatures.push(validLines[0]);
-      validLines.forEach((f) => {
-        const geom = f.geom;
+    let allFeaturesAreLines = true;
+    let accumVertices = 0;
+    const groupedLines: any[] = [[]];
+    const groupedFeatures: Feature[] = [];
+
+    for (var feature of features) {
+      allFeaturesAreLines =
+        allFeaturesAreLines || feature.geomType === GeomType.Line;
+      if (!allFeaturesAreLines) break;
+      const fbox = feature.bbox;
+      if (
+        fbox.maxX * scale + origin.x >= bbox.minX ||
+        fbox.minX * scale + origin.x <= bbox.maxX ||
+        fbox.minY * scale + origin.y <= bbox.maxY ||
+        fbox.maxY * scale + origin.y >= bbox.minY
+      ) {
+        if (groupedFeatures.length === 0) groupedFeatures.push(feature);
+        const geom = feature.geom;
         geom.forEach((ls) => {
           if (accumVertices + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
             accumVertices = ls.length;
             groupedLines.push([ls]);
-            groupedFeatures.push(f);
+            groupedFeatures.push(feature);
           } else {
             groupedLines[groupedLines.length - 1].push(ls);
             accumVertices += ls.length;
           }
         });
-      });
+      }
+    }
+
+    if (allFeaturesAreLines) {
       group.geoms = groupedLines;
       group.features = groupedFeatures;
     } else {
