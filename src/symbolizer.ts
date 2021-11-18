@@ -23,16 +23,20 @@ export interface GroupedGeometries {
   features: Feature[];
 }
 
+type ClippingFunction = (f: Feature) => boolean;
+type TransformFunction = (geom: any[][]) => any[][];
+type FilterFunction = (feature: Feature) => boolean;
 export interface PaintSymbolizer {
   before?(ctx: any, z: number): void;
-  draw(ctx: any, geom: Point[][], z: number, feature: Feature): void;
-  drawGrouped?(ctx: any, geom: Point[][], z: number, features: Feature[]): void;
-  groupGeometries?(
+  draw?(ctx: any, geom: Point[][], z: number, feature: Feature): void;
+  drawGrouped?(
+    ctx: any,
+    z: number,
     features: Feature[],
-    origin: Point,
-    bbox: Bbox,
-    scale: number
-  ): GroupedGeometries;
+    inside: ClippingFunction,
+    transformFunction: TransformFunction,
+    filterFunction: FilterFunction
+  ): void;
 }
 
 export enum Justify {
@@ -314,97 +318,83 @@ export class LineSymbolizer implements PaintSymbolizer {
     if (vertices_in_path > 0) ctx.stroke();
     ctx.restore();
   }
+}
 
-  public groupGeometries(
-    features: Feature[],
-    origin: Point,
-    bbox: Bbox,
-    scale: number
-  ): GroupedGeometries {
-    const group: GroupedGeometries = { geoms: [], features: [] };
-    let allFeaturesAreLines = true;
-    let accumVertices = 0;
-    const groupedLines: any[] = [[]];
-    const groupedFeatures: Feature[] = [];
+export class GroupedLineSymbolizer implements PaintSymbolizer {
+  color: StringAttr;
+  width: NumberAttr;
+  opacity: NumberAttr;
+  dash: ArrayAttr | null;
+  dashColor: StringAttr;
+  dashWidth: NumberAttr;
+  skip: boolean;
+  per_feature: boolean;
+  lineCap: StringAttr;
+  lineJoin: StringAttr;
 
-    for (var feature of features) {
-      allFeaturesAreLines =
-        allFeaturesAreLines || feature.geomType === GeomType.Line;
-      if (!allFeaturesAreLines) break;
-      const fbox = feature.bbox;
-      if (
-        fbox.maxX * scale + origin.x >= bbox.minX ||
-        fbox.minX * scale + origin.x <= bbox.maxX ||
-        fbox.minY * scale + origin.y <= bbox.maxY ||
-        fbox.maxY * scale + origin.y >= bbox.minY
-      ) {
-        if (groupedFeatures.length === 0) groupedFeatures.push(feature);
-        const geom = feature.geom;
-        geom.forEach((ls) => {
-          if (accumVertices + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
-            accumVertices = ls.length;
-            groupedLines.push([ls]);
-            groupedFeatures.push(feature);
-          } else {
-            groupedLines[groupedLines.length - 1].push(ls);
-            accumVertices += ls.length;
-          }
-        });
-      }
-    }
+  constructor(options: any) {
+    this.color = new StringAttr(options.color, "black");
+    this.width = new NumberAttr(options.width);
+    this.opacity = new NumberAttr(options.opacity);
+    this.dash = options.dash ? new ArrayAttr(options.dash) : null;
+    this.dashColor = new StringAttr(options.dashColor, "black");
+    this.dashWidth = new NumberAttr(options.dashWidth, 1.0);
+    this.lineCap = new StringAttr(options.lineCap, "butt");
+    this.lineJoin = new StringAttr(options.lineJoin, "miter");
+    this.skip = false;
+    this.per_feature = false;
+  }
 
-    if (allFeaturesAreLines) {
-      group.geoms = groupedLines;
-      group.features = groupedFeatures;
-    } else {
-      group.geoms = features.map((f) => f.geom);
-      group.features = features;
-    }
-    return group;
+  public before(ctx: any, z: number) {
+    ctx.strokeStyle = this.color.get(z);
+    ctx.lineWidth = this.width.get(z);
+    ctx.globalAlpha = this.opacity.get(z);
+    ctx.lineCap = this.lineCap.get(z);
+    ctx.lineJoin = this.lineJoin.get(z);
   }
 
   public drawGrouped(
     ctx: any,
-    geoms: Point[][][],
     z: number,
-    features: Feature[]
+    features: Feature[],
+    inside: ClippingFunction,
+    transform: TransformFunction,
+    filter: FilterFunction
   ) {
     if (this.skip) return;
 
-    const setStyle = (zoom: number, feature: Feature) => {
-      if (this.per_feature) {
-        ctx.globalAlpha = this.opacity.get(zoom, feature);
-        ctx.lineCap = this.lineCap.get(zoom, feature);
-        ctx.lineJoin = this.lineJoin.get(zoom, feature);
-      }
+    const setStyle = (zoom: number) => {
       if (this.dash) {
-        ctx.lineWidth = this.dashWidth.get(zoom, feature);
-        ctx.strokeStyle = this.dashColor.get(zoom, feature);
-        ctx.setLineDash(this.dash.get(zoom, feature));
-      } else {
-        if (this.per_feature) {
-          ctx.lineWidth = this.width.get(zoom, feature);
-          ctx.strokeStyle = this.color.get(zoom, feature);
-        }
+        ctx.lineWidth = this.dashWidth.get(zoom);
+        ctx.strokeStyle = this.dashColor.get(zoom);
+        ctx.setLineDash(this.dash.get(zoom));
       }
     };
 
-    var vertices_in_path = 0;
-    geoms.forEach((geom, index) => {
-      ctx.save();
-      ctx.beginPath();
-      setStyle(z, features[index]);
-      for (var ls of geom) {
-        ctx.moveTo(ls[0].x, ls[0].y);
-        for (var p = 1; p < ls.length; p++) {
-          let pt = ls[p];
-          ctx.lineTo(pt.x, pt.y);
-        }
-        vertices_in_path += ls.length;
+    let verticesInPath = 0;
+    ctx.save();
+    setStyle(z);
+    ctx.beginPath();
+    for (const feature of features) {
+      if (inside(feature) && filter(feature)) {
+        const geom = transform(feature.geom);
+        geom.forEach((ls) => {
+          if (verticesInPath + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+            ctx.stroke();
+            ctx.beginPath();
+            verticesInPath = 0;
+          }
+          ctx.moveTo(ls[0].x, ls[0].y);
+          for (var p = 1; p < ls.length; p++) {
+            let pt = ls[p];
+            ctx.lineTo(pt.x, pt.y);
+          }
+          verticesInPath += ls.length;
+        });
       }
-      ctx.stroke();
-      ctx.restore();
-    });
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
