@@ -18,6 +18,8 @@ export interface Label {
   draw: (ctx: any, drawExtra?: DrawExtra) => void;
   deduplicationKey?: string;
   deduplicationDistance?: number;
+  allowCollisions?: boolean;
+  collisionKey?: string;
 }
 
 export interface IndexedLabel {
@@ -135,7 +137,14 @@ export class Index {
   public labelCollides(label: Label, order: number): boolean {
     for (let bbox of label.bboxes) {
       for (let match of this.tree.search(bbox)) {
-        if (match.indexed_label.order <= order) return true;
+        if (match.indexed_label.order <= order) {
+          if (
+            !!label.allowCollisions &&
+            match.collisionKey === label.collisionKey
+          )
+            return false;
+          return true;
+        }
       }
     }
     return false;
@@ -187,6 +196,7 @@ export class Index {
     for (let bbox of label.bboxes) {
       var b: any = bbox;
       b.indexed_label = indexed_label;
+      if (label.collisionKey) b.collisionKey = label.collisionKey;
       this.tree.insert(b);
 
       if (bbox.minX < 0) wrapsLeft = true;
