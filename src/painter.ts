@@ -130,6 +130,21 @@ export function xray(
   return performance.now() - start;
 }
 
+const isFeatureInTile = (
+  f: Feature,
+  scaleFactor: number,
+  origin: Point,
+  tileBbox: Bbox
+): boolean => {
+  const fbox = f.bbox;
+  return !(
+    fbox.maxX * scaleFactor + origin.x < tileBbox.minX ||
+    fbox.minX * scaleFactor + origin.x > tileBbox.maxX ||
+    fbox.minY * scaleFactor + origin.y > tileBbox.maxY ||
+    fbox.maxY * scaleFactor + origin.y < tileBbox.minY
+  );
+};
+
 export function painter(
   ctx: any,
   prepared_tiles: PreparedTile[],
@@ -172,22 +187,27 @@ export function painter(
       if (layer === undefined) continue;
       if (rule.symbolizer.before) rule.symbolizer.before(ctx, prepared_tile.z);
 
-      for (var feature of layer) {
-        let geom = feature.geom;
-        let fbox = feature.bbox;
-        if (
-          fbox.maxX * ps + po.x < bbox.minX ||
-          fbox.minX * ps + po.x > bbox.maxX ||
-          fbox.minY * ps + po.y > bbox.maxY ||
-          fbox.maxY * ps + po.y < bbox.minY
-        ) {
-          continue;
+      if (rule.symbolizer.drawGrouped) {
+        rule.symbolizer.drawGrouped(
+          ctx,
+          prepared_tile.z,
+          layer,
+          (f) => isFeatureInTile(f, ps, po, bbox),
+          ps != 1 ? (g) => transformGeom(g, ps, new Point(0, 0)) : (g) => g,
+          (f) => (rule.filter ? rule.filter(prepared_tile.z, f) : true)
+        );
+      } else if (rule.symbolizer.draw) {
+        for (var feature of layer) {
+          let geom = feature.geom;
+          if (!isFeatureInTile(feature, ps, po, bbox)) {
+            continue;
+          }
+          if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
+          if (ps != 1) {
+            geom = transformGeom(geom, ps, new Point(0, 0));
+          }
+          rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
         }
-        if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
-        if (ps != 1) {
-          geom = transformGeom(geom, ps, new Point(0, 0));
-        }
-        rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
       }
     }
     ctx.restore();

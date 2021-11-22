@@ -18,9 +18,25 @@ import { Index, Label, Layout } from "./labeler";
 // https://bugs.webkit.org/show_bug.cgi?id=230751
 const MAX_VERTICES_PER_DRAW_CALL = 5400;
 
+export interface GroupedGeometries {
+  geoms: Point[][][];
+  features: Feature[];
+}
+
+type ClippingFunction = (f: Feature) => boolean;
+type TransformFunction = (geom: any[][]) => any[][];
+type FilterFunction = (feature: Feature) => boolean;
 export interface PaintSymbolizer {
   before?(ctx: any, z: number): void;
-  draw(ctx: any, geom: Point[][], z: number, feature: Feature): void;
+  draw?(ctx: any, geom: Point[][], z: number, feature: Feature): void;
+  drawGrouped?(
+    ctx: any,
+    z: number,
+    features: Feature[],
+    inside: ClippingFunction,
+    transformFunction: TransformFunction,
+    filterFunction: FilterFunction
+  ): void;
 }
 
 export enum Justify {
@@ -128,6 +144,76 @@ export class PolygonSymbolizer implements PaintSymbolizer {
       vertices_in_path += poly.length;
     }
     if (vertices_in_path > 0) drawPath();
+  }
+}
+
+export class GroupedPolygonSymbolizer implements PaintSymbolizer {
+  pattern: any; // FIXME
+  fill: StringAttr;
+  opacity: NumberAttr;
+  stroke: StringAttr;
+  width: NumberAttr;
+  do_stroke: boolean;
+
+  constructor(options: any) {
+    this.pattern = options.pattern;
+    this.fill = new StringAttr(options.fill, "black");
+    this.opacity = new NumberAttr(options.opacity, 1);
+    this.stroke = new StringAttr(options.stroke, "black");
+    this.width = new NumberAttr(options.width, 0);
+    this.do_stroke = false;
+  }
+
+  public before(ctx: any, z: number) {
+    ctx.globalAlpha = this.opacity.get(z);
+    ctx.fillStyle = this.fill.get(z);
+    ctx.strokeStyle = this.stroke.get(z);
+    let width = this.width.get(z);
+    if (width > 0) this.do_stroke = true;
+    ctx.lineWidth = width;
+    if (this.pattern) {
+      ctx.fillStyle = ctx.createPattern(this.pattern, "repeat");
+    }
+  }
+
+  public drawGrouped(
+    ctx: any,
+    z: number,
+    features: Feature[],
+    inside: ClippingFunction,
+    transform: TransformFunction,
+    filter: FilterFunction
+  ) {
+    const drawPath = () => {
+      ctx.fill();
+      if (this.do_stroke) {
+        ctx.stroke();
+      }
+    };
+
+    let verticesInPath = 0;
+    ctx.save();
+    ctx.beginPath();
+    for (const feature of features) {
+      if (inside(feature) && filter(feature)) {
+        const geom = transform(feature.geom);
+        geom.forEach((poly) => {
+          if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+            drawPath();
+            ctx.beginPath();
+            verticesInPath = 0;
+          }
+          ctx.moveTo(poly[0].x, poly[0].y);
+          for (var p = 1; p < poly.length; p++) {
+            let pt = poly[p];
+            ctx.lineTo(pt.x, pt.y);
+          }
+          verticesInPath += poly.length;
+        });
+      }
+    }
+    drawPath();
+    ctx.restore();
   }
 }
 
@@ -264,46 +350,121 @@ export class LineSymbolizer implements PaintSymbolizer {
   public draw(ctx: any, geom: Point[][], z: number, f: Feature) {
     if (this.skip) return;
 
-    let strokePath = () => {
+    const setStyle = () => {
       if (this.per_feature) {
         ctx.globalAlpha = this.opacity.get(z, f);
         ctx.lineCap = this.lineCap.get(z, f);
         ctx.lineJoin = this.lineJoin.get(z, f);
       }
       if (this.dash) {
-        ctx.save();
         ctx.lineWidth = this.dashWidth.get(z, f);
         ctx.strokeStyle = this.dashColor.get(z, f);
         ctx.setLineDash(this.dash.get(z, f));
-        ctx.stroke();
-        ctx.restore();
       } else {
-        ctx.save();
         if (this.per_feature) {
           ctx.lineWidth = this.width.get(z, f);
           ctx.strokeStyle = this.color.get(z, f);
         }
-        ctx.stroke();
-        ctx.restore();
       }
     };
 
     var vertices_in_path = 0;
+    ctx.save();
     ctx.beginPath();
+    setStyle();
     for (var ls of geom) {
       if (vertices_in_path + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
-        strokePath();
+        ctx.stroke();
         vertices_in_path = 0;
         ctx.beginPath();
       }
-      for (var p = 0; p < ls.length; p++) {
+      ctx.moveTo(ls[0].x, ls[0].y);
+      for (var p = 1; p < ls.length; p++) {
         let pt = ls[p];
-        if (p == 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
+        ctx.lineTo(pt.x, pt.y);
       }
       vertices_in_path += ls.length;
     }
-    if (vertices_in_path > 0) strokePath();
+    if (vertices_in_path > 0) ctx.stroke();
+    ctx.restore();
+  }
+}
+
+export class GroupedLineSymbolizer implements PaintSymbolizer {
+  color: StringAttr;
+  width: NumberAttr;
+  opacity: NumberAttr;
+  dash: ArrayAttr | null;
+  dashColor: StringAttr;
+  dashWidth: NumberAttr;
+  skip: boolean;
+  per_feature: boolean;
+  lineCap: StringAttr;
+  lineJoin: StringAttr;
+
+  constructor(options: any) {
+    this.color = new StringAttr(options.color, "black");
+    this.width = new NumberAttr(options.width);
+    this.opacity = new NumberAttr(options.opacity);
+    this.dash = options.dash ? new ArrayAttr(options.dash) : null;
+    this.dashColor = new StringAttr(options.dashColor, "black");
+    this.dashWidth = new NumberAttr(options.dashWidth, 1.0);
+    this.lineCap = new StringAttr(options.lineCap, "butt");
+    this.lineJoin = new StringAttr(options.lineJoin, "miter");
+    this.skip = false;
+    this.per_feature = false;
+  }
+
+  public before(ctx: any, z: number) {
+    ctx.strokeStyle = this.color.get(z);
+    ctx.lineWidth = this.width.get(z);
+    ctx.globalAlpha = this.opacity.get(z);
+    ctx.lineCap = this.lineCap.get(z);
+    ctx.lineJoin = this.lineJoin.get(z);
+  }
+
+  public drawGrouped(
+    ctx: any,
+    z: number,
+    features: Feature[],
+    inside: ClippingFunction,
+    transform: TransformFunction,
+    filter: FilterFunction
+  ) {
+    if (this.skip) return;
+
+    const setStyle = (zoom: number) => {
+      if (this.dash) {
+        ctx.lineWidth = this.dashWidth.get(zoom);
+        ctx.strokeStyle = this.dashColor.get(zoom);
+        ctx.setLineDash(this.dash.get(zoom));
+      }
+    };
+
+    let verticesInPath = 0;
+    ctx.save();
+    setStyle(z);
+    ctx.beginPath();
+    for (const feature of features) {
+      if (inside(feature) && filter(feature)) {
+        const geom = transform(feature.geom);
+        geom.forEach((ls) => {
+          if (verticesInPath + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+            ctx.stroke();
+            ctx.beginPath();
+            verticesInPath = 0;
+          }
+          ctx.moveTo(ls[0].x, ls[0].y);
+          for (var p = 1; p < ls.length; p++) {
+            let pt = ls[p];
+            ctx.lineTo(pt.x, pt.y);
+          }
+          verticesInPath += ls.length;
+        });
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
