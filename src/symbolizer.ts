@@ -147,6 +147,76 @@ export class PolygonSymbolizer implements PaintSymbolizer {
   }
 }
 
+export class GroupedPolygonSymbolizer implements PaintSymbolizer {
+  pattern: any; // FIXME
+  fill: StringAttr;
+  opacity: NumberAttr;
+  stroke: StringAttr;
+  width: NumberAttr;
+  do_stroke: boolean;
+
+  constructor(options: any) {
+    this.pattern = options.pattern;
+    this.fill = new StringAttr(options.fill, "black");
+    this.opacity = new NumberAttr(options.opacity, 1);
+    this.stroke = new StringAttr(options.stroke, "black");
+    this.width = new NumberAttr(options.width, 0);
+    this.do_stroke = false;
+  }
+
+  public before(ctx: any, z: number) {
+    ctx.globalAlpha = this.opacity.get(z);
+    ctx.fillStyle = this.fill.get(z);
+    ctx.strokeStyle = this.stroke.get(z);
+    let width = this.width.get(z);
+    if (width > 0) this.do_stroke = true;
+    ctx.lineWidth = width;
+    if (this.pattern) {
+      ctx.fillStyle = ctx.createPattern(this.pattern, "repeat");
+    }
+  }
+
+  public drawGrouped(
+    ctx: any,
+    z: number,
+    features: Feature[],
+    inside: ClippingFunction,
+    transform: TransformFunction,
+    filter: FilterFunction
+  ) {
+    const drawPath = () => {
+      ctx.fill();
+      if (this.do_stroke) {
+        ctx.stroke();
+      }
+    };
+
+    let verticesInPath = 0;
+    ctx.save();
+    ctx.beginPath();
+    for (const feature of features) {
+      if (inside(feature) && filter(feature)) {
+        const geom = transform(feature.geom);
+        geom.forEach((poly) => {
+          if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+            drawPath();
+            ctx.beginPath();
+            verticesInPath = 0;
+          }
+          ctx.moveTo(poly[0].x, poly[0].y);
+          for (var p = 1; p < poly.length; p++) {
+            let pt = poly[p];
+            ctx.lineTo(pt.x, pt.y);
+          }
+          verticesInPath += poly.length;
+        });
+      }
+    }
+    drawPath();
+    ctx.restore();
+  }
+}
+
 export function arr(base: number, a: number[]): (z: number) => number {
   return (z) => {
     let b = z - base;
