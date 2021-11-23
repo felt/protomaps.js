@@ -16,7 +16,7 @@ import { lineCells, simpleLabel } from "./line";
 import { Index, Label, Layout } from "./labeler";
 
 // https://bugs.webkit.org/show_bug.cgi?id=230751
-const MAX_VERTICES_PER_DRAW_CALL = 5400;
+const MAX_VERTICES_PER_DRAW_CALL = 4000;
 
 export interface GroupedGeometries {
   geoms: Point[][][];
