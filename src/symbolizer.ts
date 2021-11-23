@@ -11,12 +11,12 @@ import {
   FontAttr,
   ArrayAttr,
 } from "./attribute";
-import { linebreak, isCjk } from "./text";
+import { linebreak } from "./text";
 import { lineCells, simpleLabel } from "./line";
-import { Index, Label, Layout } from "./labeler";
+import { Label, Layout } from "./labeler";
 
 // https://bugs.webkit.org/show_bug.cgi?id=230751
-const MAX_VERTICES_PER_DRAW_CALL = 4000;
+export const MAX_VERTICES_PER_DRAW_CALL = 4000;
 
 export interface GroupedGeometries {
   geoms: Point[][][];

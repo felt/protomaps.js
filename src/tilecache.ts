@@ -6,6 +6,7 @@ import { VectorTile } from "@mapbox/vector-tile";
 import Protobuf from "pbf";
 // @ts-ignore
 import { PMTiles } from "pmtiles";
+import { MAX_VERTICES_PER_DRAW_CALL } from "./symbolizer";
 
 import { splitMultiLineString, splitMultiPolygon } from "./workaround";
 
@@ -105,13 +106,15 @@ function parseTile(
       let numVertices = 0;
       for (let part of result.geom) numVertices += part.length;
 
-      let LIMIT = 5400;
       let split: Point[][] = [];
-      if (numVertices > LIMIT && layer.feature(i).type != GeomType.Point) {
+      if (
+        numVertices > MAX_VERTICES_PER_DRAW_CALL &&
+        layer.feature(i).type != GeomType.Point
+      ) {
         if (layer.feature(i).type == GeomType.Line) {
-          split = splitMultiLineString(result.geom, LIMIT);
+          split = splitMultiLineString(result.geom, MAX_VERTICES_PER_DRAW_CALL);
         } else {
-          split = splitMultiPolygon(result.geom, LIMIT);
+          split = splitMultiPolygon(result.geom, MAX_VERTICES_PER_DRAW_CALL);
         }
         for (let part of split) {
           features.push({
