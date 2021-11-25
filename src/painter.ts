@@ -111,8 +111,8 @@ export function painter(
           }
           rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
         }
-        ctx.restore();
       }
+      ctx.restore();
     }
   }
 
