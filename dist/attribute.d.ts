@@ -12,8 +12,9 @@ export declare class NumberAttr {
     get(z: number, f?: Feature): number;
 }
 export declare class TextAttr {
-    label_props: string[] | ((z: number, f?: Feature) => string[]) | ((z: number, f?: Feature) => string);
+    label_props: string[] | ((z: number, f?: Feature) => string[]);
     textTransform: string | ((z: number, f?: Feature) => string);
+    value?: (z: number, f?: Feature) => string;
     constructor(options?: any);
     get(z: number, f: Feature): string;
 }

@@ -88,7 +88,7 @@
                   {
                     dataLayer:"water",
                     symbolizer:new protomaps.PolygonLabelSymbolizer({
-                        label_props: (z, f) => f.props["pmap:ocean"] === "yes" ? `Ocean` : '',
+                        value: (z, f) => f.props["pmap:ocean"] === "yes" ? `Ocean` : '',
                         font:"900 20px " + font,
                         fill:"#00449E"
                     })

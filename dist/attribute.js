@@ -31,26 +31,26 @@ export class TextAttr {
     constructor(options = {}) {
         this.label_props = options.label_props || ["name"];
         this.textTransform = options.textTransform;
+        this.value = options.value;
     }
     get(z, f) {
         var retval;
-        var label_props;
-        if (typeof this.label_props == "function") {
-            const labelFromProps = this.label_props(z, f);
-            if (typeof labelFromProps == "string") {
-                retval = labelFromProps;
-                label_props = [];
-            }
-            else
-                label_props = labelFromProps;
+        if (this.value) {
+            retval = this.value(z, f);
         }
         else {
-            label_props = this.label_props;
-        }
-        for (let property of label_props) {
-            if (f.props.hasOwnProperty(property)) {
-                retval = f.props[property];
-                break;
+            var label_props;
+            if (typeof this.label_props == "function") {
+                label_props = this.label_props(z, f);
+            }
+            else {
+                label_props = this.label_props;
+            }
+            for (let property of label_props) {
+                if (f.props.hasOwnProperty(property)) {
+                    retval = f.props[property];
+                    break;
+                }
             }
         }
         let transform;

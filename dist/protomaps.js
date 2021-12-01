@@ -1957,24 +1957,24 @@ var protomaps = (() => {
     constructor(options = {}) {
       this.label_props = options.label_props || ["name"];
       this.textTransform = options.textTransform;
+      this.value = options.value;
     }
     get(z2, f2) {
       var retval;
-      var label_props;
-      if (typeof this.label_props == "function") {
-        const labelFromProps = this.label_props(z2, f2);
-        if (typeof labelFromProps == "string") {
-          retval = labelFromProps;
-          label_props = [];
-        } else
-          label_props = labelFromProps;
+      if (this.value) {
+        retval = this.value(z2, f2);
       } else {
-        label_props = this.label_props;
-      }
-      for (let property of label_props) {
-        if (f2.props.hasOwnProperty(property)) {
-          retval = f2.props[property];
-          break;
+        var label_props;
+        if (typeof this.label_props == "function") {
+          label_props = this.label_props(z2, f2);
+        } else {
+          label_props = this.label_props;
+        }
+        for (let property of label_props) {
+          if (f2.props.hasOwnProperty(property)) {
+            retval = f2.props[property];
+            break;
+          }
         }
       }
       let transform;

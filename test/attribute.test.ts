@@ -191,7 +191,7 @@ test("textattr", async () => {
   assert.equal(t.get(9, { props: { name: "台北", abbr: "TPE" } }), "台北");
 
   t = new TextAttr({
-    label_props: (z, f) => {
+    value: (z, f) => {
       return `${f.props.abbr} ${f.props.name}`;
     },
   });
