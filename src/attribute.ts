@@ -40,25 +40,31 @@ export class NumberAttr {
 export class TextAttr {
   label_props: string[] | ((z: number, f?: Feature) => string[]);
   textTransform: string | ((z: number, f?: Feature) => string);
+  value?: (z: number, f?: Feature) => string;
 
   constructor(options: any = {}) {
     this.label_props = options.label_props || ["name"];
     this.textTransform = options.textTransform;
+    this.value = options.value;
   }
 
   public get(z: number, f: Feature): string {
     var retval;
 
-    var label_props: string[];
-    if (typeof this.label_props == "function") {
-      label_props = this.label_props(z, f);
+    if (this.value) {
+      retval = this.value(z, f);
     } else {
-      label_props = this.label_props;
-    }
-    for (let property of label_props) {
-      if (f.props.hasOwnProperty(property)) {
-        retval = f.props[property];
-        break;
+      var label_props: string[];
+      if (typeof this.label_props == "function") {
+        label_props = this.label_props(z, f);
+      } else {
+        label_props = this.label_props;
+      }
+      for (let property of label_props) {
+        if (f.props.hasOwnProperty(property)) {
+          retval = f.props[property];
+          break;
+        }
       }
     }
     let transform;
