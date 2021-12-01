@@ -189,6 +189,13 @@ test("textattr", async () => {
   });
   assert.equal(t.get(0, { props: { name: "台北", abbr: "TPE" } }), "TPE");
   assert.equal(t.get(9, { props: { name: "台北", abbr: "TPE" } }), "台北");
+
+  t = new TextAttr({
+    label_props: (z, f) => {
+      return `${f.props.abbr} ${f.props.name}`;
+    },
+  });
+  assert.equal(t.get(0, { props: { name: "台北", abbr: "TPE" } }), "TPE 台北");
 });
 
 test("arrayattr", async () => {

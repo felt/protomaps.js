@@ -38,7 +38,10 @@ export class NumberAttr {
 }
 
 export class TextAttr {
-  label_props: string[] | ((z: number, f?: Feature) => string[]);
+  label_props:
+    | string[]
+    | ((z: number, f?: Feature) => string[])
+    | ((z: number, f?: Feature) => string);
   textTransform: string | ((z: number, f?: Feature) => string);
 
   constructor(options: any = {}) {
@@ -51,7 +54,11 @@ export class TextAttr {
 
     var label_props: string[];
     if (typeof this.label_props == "function") {
-      label_props = this.label_props(z, f);
+      const labelFromProps = this.label_props(z, f);
+      if (typeof labelFromProps == "string") {
+        retval = labelFromProps;
+        label_props = [];
+      } else label_props = labelFromProps;
     } else {
       label_props = this.label_props;
     }

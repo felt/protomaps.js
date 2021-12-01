@@ -1887,7 +1887,12 @@ var TextAttr = class {
     var retval;
     var label_props;
     if (typeof this.label_props == "function") {
-      label_props = this.label_props(z2, f2);
+      const labelFromProps = this.label_props(z2, f2);
+      if (typeof labelFromProps == "string") {
+        retval = labelFromProps;
+        label_props = [];
+      } else
+        label_props = labelFromProps;
     } else {
       label_props = this.label_props;
     }
