@@ -1,3 +1,4 @@
+export * from "./frontends/static";
 export * from "./frontends/leaflet";
 export * from "./symbolizer";
 export * from "./task";
