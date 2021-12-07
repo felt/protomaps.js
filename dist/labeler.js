@@ -29,10 +29,11 @@ export const covering = (display_zoom, tile_width, bbox) => {
     return retval;
 };
 export class Index {
-    constructor(dim) {
+    constructor(dim, maxLabeledTiles) {
         this.tree = new RBush();
         this.current = new Map();
         this.dim = dim;
+        this.maxLabeledTiles = maxLabeledTiles;
     }
     has(tileKey) {
         return this.current.has(tileKey);
@@ -100,6 +101,13 @@ export class Index {
         }
         return false;
     }
+    makeEntry(tileKey) {
+        if (this.current.get(tileKey)) {
+            console.log("consistency error 1");
+        }
+        let newSet = new Set();
+        this.current.set(tileKey, newSet);
+    }
     // can put in multiple due to antimeridian wrapping
     insert(label, order, tileKey) {
         let indexed_label = {
@@ -112,14 +120,12 @@ export class Index {
             deduplicationDistance: label.deduplicationDistance,
         };
         let entry = this.current.get(tileKey);
-        if (entry) {
-            entry.add(indexed_label);
-        }
-        else {
+        if (!entry) {
             let newSet = new Set();
-            newSet.add(indexed_label);
             this.current.set(tileKey, newSet);
+            entry = newSet;
         }
+        entry.add(indexed_label);
         var wrapsLeft = false;
         var wrapsRight = false;
         for (let bbox of label.bboxes) {
@@ -159,7 +165,28 @@ export class Index {
             }
         }
     }
-    prune(keyToRemove) {
+    pruneOrNoop(key_added) {
+        let added = key_added.split(":");
+        let max_key = undefined;
+        let max_dist = 0;
+        let keys_for_ds = 0;
+        for (var existing_key of this.current.keys()) {
+            let existing = existing_key.split(":");
+            if (existing[3] === added[3]) {
+                keys_for_ds++;
+                let dist = Math.sqrt(Math.pow(+existing[0] - +added[0], 2) +
+                    Math.pow(+existing[1] - +added[1], 2));
+                if (dist > max_dist) {
+                    max_dist = dist;
+                    max_key = existing_key;
+                }
+            }
+            if (max_key && keys_for_ds > this.maxLabeledTiles) {
+                this.pruneKey(max_key);
+            }
+        }
+    }
+    pruneKey(keyToRemove) {
         let indexed_labels = this.current.get(keyToRemove);
         if (!indexed_labels)
             return; // TODO: not that clean...
@@ -195,16 +222,23 @@ export class Index {
 }
 export class Labeler {
     constructor(z, scratch, labelRules, maxLabeledTiles, callback) {
-        this.index = new Index((256 * 1) << z);
+        this.index = new Index((256 * 1) << z, maxLabeledTiles);
         this.z = z;
         this.scratch = scratch;
         this.labelRules = labelRules;
         this.callback = callback;
-        this.maxLabeledTiles = maxLabeledTiles;
     }
-    layout(pt) {
+    layout(prepared_tilemap) {
         let start = performance.now();
-        let key = toIndex(pt.data_tile);
+        let keys_adding = new Set();
+        // if it already exists... short circuit
+        for (let [k, v] of prepared_tilemap) {
+            let key = toIndex(v.data_tile) + ":" + k;
+            if (!this.index.has(key)) {
+                this.index.makeEntry(key);
+                keys_adding.add(key);
+            }
+        }
         let tiles_invalidated = new Set();
         for (let [order, rule] of this.labelRules.entries()) {
             if (rule.visible == false)
@@ -212,6 +246,13 @@ export class Labeler {
             if (rule.minzoom && this.z < rule.minzoom)
                 continue;
             if (rule.maxzoom && this.z > rule.maxzoom)
+                continue;
+            let dsName = rule.dataSource || "";
+            let pt = prepared_tilemap.get(dsName);
+            if (!pt)
+                continue;
+            let key = toIndex(pt.data_tile) + ":" + dsName;
+            if (!keys_adding.has(key))
                 continue;
             let layer = pt.data.get(rule.dataLayer);
             if (layer === undefined)
@@ -277,6 +318,9 @@ export class Labeler {
                 }
             }
         }
+        for (var key of keys_adding) {
+            this.index.pruneOrNoop(key);
+        }
         if (tiles_invalidated.size > 0 && this.callback) {
             this.callback(tiles_invalidated);
         }
@@ -290,31 +334,17 @@ export class Labeler {
             }
         }
     }
-    pruneCache(added) {
-        if (this.index.size() > this.maxLabeledTiles) {
-            let max_key = undefined;
-            let max_dist = 0;
-            for (let key of this.index.keys()) {
-                let split = key.split(":");
-                let dist = Math.sqrt(Math.pow(+split[0] - added.data_tile.x, 2) +
-                    Math.pow(+split[1] - added.data_tile.y, 2));
-                if (dist > max_dist) {
-                    max_dist = dist;
-                    max_key = key;
-                }
-            }
-            if (max_key)
-                this.index.prune(max_key); // TODO cleanup
+    add(prepared_tilemap) {
+        var all_added = true;
+        for (let [k, v] of prepared_tilemap) {
+            if (!this.index.has(toIndex(v.data_tile) + ":" + k))
+                all_added = false;
         }
-    }
-    add(prepared_tile) {
-        let idx = toIndex(prepared_tile.data_tile);
-        if (this.index.has(idx)) {
+        if (all_added) {
             return 0;
         }
         else {
-            let timing = this.layout(prepared_tile);
-            this.pruneCache(prepared_tile);
+            let timing = this.layout(prepared_tilemap);
             return timing;
         }
     }
@@ -327,15 +357,15 @@ export class Labelers {
         this.maxLabeledTiles = maxLabeledTiles;
         this.callback = callback;
     }
-    add(prepared_tile) {
-        var labeler = this.labelers.get(prepared_tile.z);
+    add(z, prepared_tilemap) {
+        var labeler = this.labelers.get(z);
         if (labeler) {
-            return labeler.add(prepared_tile);
+            return labeler.add(prepared_tilemap);
         }
         else {
-            labeler = new Labeler(prepared_tile.z, this.scratch, this.labelRules, this.maxLabeledTiles, this.callback);
-            this.labelers.set(prepared_tile.z, labeler);
-            return labeler.add(prepared_tile);
+            labeler = new Labeler(z, this.scratch, this.labelRules, this.maxLabeledTiles, this.callback);
+            this.labelers.set(z, labeler);
+            return labeler.add(prepared_tilemap);
         }
     }
     getIndex(z) {
