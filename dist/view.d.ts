@@ -29,3 +29,4 @@ export declare class View {
     getDisplayTile(display_tile: Zxy): Promise<PreparedTile>;
     queryFeatures(lng: number, lat: number, display_zoom: number): import("./tilecache").PickedFeature[];
 }
+export declare let sourcesToViews: (options: any) => Map<string, View>;

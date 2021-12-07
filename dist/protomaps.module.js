@@ -58,14 +58,14 @@ var __async = (__this, __arguments, generator) => {
 var require_point_geometry = __commonJS({
   "node_modules/@mapbox/point-geometry/index.js"(exports, module) {
     "use strict";
-    module.exports = Point10;
-    function Point10(x, y) {
+    module.exports = Point9;
+    function Point9(x, y) {
       this.x = x;
       this.y = y;
     }
-    Point10.prototype = {
+    Point9.prototype = {
       clone: function() {
-        return new Point10(this.x, this.y);
+        return new Point9(this.x, this.y);
       },
       add: function(p2) {
         return this.clone()._add(p2);
@@ -192,12 +192,12 @@ var require_point_geometry = __commonJS({
         return this;
       }
     };
-    Point10.convert = function(a2) {
-      if (a2 instanceof Point10) {
+    Point9.convert = function(a2) {
+      if (a2 instanceof Point9) {
         return a2;
       }
       if (Array.isArray(a2)) {
-        return new Point10(a2[0], a2[1]);
+        return new Point9(a2[0], a2[1]);
       }
       return a2;
     };
@@ -208,7 +208,7 @@ var require_point_geometry = __commonJS({
 var require_vectortilefeature = __commonJS({
   "node_modules/@mapbox/vector-tile/lib/vectortilefeature.js"(exports, module) {
     "use strict";
-    var Point10 = require_point_geometry();
+    var Point9 = require_point_geometry();
     module.exports = VectorTileFeature;
     function VectorTileFeature(pbf, end, extent, keys, values) {
       this.properties = {};
@@ -257,7 +257,7 @@ var require_vectortilefeature = __commonJS({
               lines.push(line);
             line = [];
           }
-          line.push(new Point10(x, y));
+          line.push(new Point9(x, y));
         } else if (cmd === 7) {
           if (line) {
             line.push(line[0].clone());
@@ -300,7 +300,7 @@ var require_vectortilefeature = __commonJS({
     };
     VectorTileFeature.prototype.toGeoJSON = function(x, y, z2) {
       var size = this.extent * Math.pow(2, z2), x0 = this.extent * x, y0 = this.extent * y, coords = this.loadGeometry(), type = VectorTileFeature.types[this.type], i2, j;
-      function project3(line) {
+      function project2(line) {
         for (var j2 = 0; j2 < line.length; j2++) {
           var p2 = line[j2], y2 = 180 - (p2.y + y0) * 360 / size;
           line[j2] = [
@@ -316,18 +316,18 @@ var require_vectortilefeature = __commonJS({
             points[i2] = coords[i2][0];
           }
           coords = points;
-          project3(coords);
+          project2(coords);
           break;
         case 2:
           for (i2 = 0; i2 < coords.length; i2++) {
-            project3(coords[i2]);
+            project2(coords[i2]);
           }
           break;
         case 3:
           coords = classifyRings(coords);
           for (i2 = 0; i2 < coords.length; i2++) {
             for (j = 0; j < coords[i2].length; j++) {
-              project3(coords[i2][j]);
+              project2(coords[i2][j]);
             }
           }
           break;
@@ -1660,8 +1660,20 @@ var require_rbush_min = __commonJS({
   }
 });
 
-// src/frontends/static.ts
+// src/frontends/leaflet.ts
 var import_point_geometry7 = __toModule(require_point_geometry());
+
+// src/view.ts
+var import_point_geometry4 = __toModule(require_point_geometry());
+
+// src/events.ts
+var ProtomapsEvent;
+(function(ProtomapsEvent2) {
+  ProtomapsEvent2["TileFetchStart"] = "tile-fetch-start";
+  ProtomapsEvent2["TileFetchEnd"] = "tile-fetch-end";
+  ProtomapsEvent2["RerenderStart"] = "rerender-start";
+  ProtomapsEvent2["RerenderEnd"] = "rerender-end";
+})(ProtomapsEvent || (ProtomapsEvent = {}));
 
 // src/tilecache.ts
 var import_point_geometry3 = __toModule(require_point_geometry());
@@ -3445,30 +3457,6 @@ var TileCache = class {
 };
 
 // src/view.ts
-var import_point_geometry4 = __toModule(require_point_geometry());
-
-// src/events.ts
-var ProtomapsEvent;
-(function(ProtomapsEvent2) {
-  ProtomapsEvent2["TileFetchStart"] = "tile-fetch-start";
-  ProtomapsEvent2["TileFetchEnd"] = "tile-fetch-end";
-  ProtomapsEvent2["RerenderStart"] = "rerender-start";
-  ProtomapsEvent2["RerenderEnd"] = "rerender-end";
-})(ProtomapsEvent || (ProtomapsEvent = {}));
-var EventQueue = class {
-  constructor() {
-    this.subs = {};
-  }
-  subscribe(eventName, handler) {
-    this.subs[eventName] = this.subs[eventName] || [];
-    this.subs[eventName].push(handler);
-  }
-  publish(eventName, ...args) {
-    (this.subs[eventName] || []).forEach((sub) => sub(...args));
-  }
-};
-
-// src/view.ts
 var transformGeom = (geom, scale, translate) => {
   let retval = [];
   for (let arr2 of geom) {
@@ -3628,128 +3616,61 @@ var View = class {
     return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
   }
 };
+var sourcesToViews = (options) => {
+  let sourceToViews = (o2) => {
+    let level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
+    let maxDataZoom = o2.maxDataZoom || 14;
+    let source;
+    if (o2.url.url) {
+      source = new PmtilesSource(o2.url, true);
+    } else if (o2.url.endsWith(".pmtiles")) {
+      source = new PmtilesSource(o2.url, true);
+    } else {
+      source = new ZxySource(o2.url, true);
+    }
+    let cache = new TileCache(source, 256 * 1 << level_diff);
+    return new View(cache, maxDataZoom, level_diff);
+  };
+  let sources = new Map();
+  if (options.sources) {
+    for (const [key, value] of Object.entries(options.sources)) {
+      sources.set(key, sourceToViews(value));
+    }
+  } else {
+    sources.set("", sourceToViews(options));
+  }
+  return sources;
+};
 
 // src/painter.ts
 var import_point_geometry5 = __toModule(require_point_geometry());
-function xray(ctx, prepared_tiles, bbox, origin, clip, debug) {
-  let start = performance.now();
-  let xray_colors = [
-    "crimson",
-    "lightgreen",
-    "lightseagreen",
-    "mediumslateblue",
-    "purple",
-    "cornflowerblue"
-  ];
-  ctx.save();
-  ctx.miterLimit = 2;
-  for (var prepared_tile of prepared_tiles) {
-    let po = prepared_tile.origin;
-    let ps = prepared_tile.scale;
-    let dim = prepared_tile.dim;
-    ctx.save();
-    if (clip) {
-      ctx.beginPath();
-      let minX = Math.max(po.x - origin.x, bbox.minX - origin.x) - 0.5;
-      let minY = Math.max(po.y - origin.y, bbox.minY - origin.y) - 0.5;
-      let maxX = Math.min(po.x - origin.x + dim, bbox.maxX - origin.x) + 0.5;
-      let maxY = Math.min(po.y - origin.y + dim, bbox.maxY - origin.y) + 0.5;
-      ctx.rect(minX, minY, maxX - minX, maxY - minY);
-      ctx.clip();
-    }
-    ctx.translate(po.x - origin.x, po.y - origin.y);
-    if (clip) {
-      ctx.translate(dim / 2, dim / 2);
-      ctx.scale(1 + 1 / dim, 1 + 1 / dim);
-      ctx.translate(-dim / 2, -dim / 2);
-    }
-    prepared_tile.data.forEach((features, layerName) => {
-      if (layerName == "earth")
-        return;
-      let color = xray_colors[layerName.charCodeAt(0) % 6];
-      let point_symbolizer = new CircleSymbolizer({
-        fill: color,
-        opacity: 0.8
-      });
-      let line_symbolizer = new LineSymbolizer({
-        per_feature: true,
-        color,
-        opacity: 0.5
-      });
-      let polygon_symbolizer = new PolygonSymbolizer({
-        per_feature: true,
-        fill: color,
-        opacity: 0.3
-      });
-      line_symbolizer.before(ctx, prepared_tile.z);
-      polygon_symbolizer.before(ctx, prepared_tile.z);
-      for (var feature of features) {
-        let geom = feature.geom;
-        let fbox = feature.bbox;
-        if (fbox.maxX * ps + po.x < bbox.minX || fbox.minX * ps + po.x > bbox.maxX || fbox.minY * ps + po.y > bbox.maxY || fbox.maxY * ps + po.y < bbox.minY) {
-          continue;
-        }
-        if (ps != 1) {
-          geom = transformGeom(geom, ps, new import_point_geometry5.default(0, 0));
-        }
-        if (feature.geomType == GeomType.Point) {
-          point_symbolizer.draw(ctx, geom, prepared_tile.z, feature);
-        } else if (feature.geomType == GeomType.Line) {
-          line_symbolizer.draw(ctx, geom, prepared_tile.z, feature);
-        } else {
-          polygon_symbolizer.draw(ctx, geom, prepared_tile.z, feature);
-          line_symbolizer.draw(ctx, geom, prepared_tile.z, feature);
-        }
-      }
-    });
-    ctx.restore();
-  }
-  if (clip) {
-    ctx.beginPath();
-    ctx.rect(bbox.minX - origin.x, bbox.minY - origin.y, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY);
-    ctx.clip();
-  }
-  ctx.restore();
-  return performance.now() - start;
-}
 var isFeatureInTile = (f2, scaleFactor, origin, tileBbox) => {
   const fbox = f2.bbox;
   return !(fbox.maxX * scaleFactor + origin.x < tileBbox.minX || fbox.minX * scaleFactor + origin.x > tileBbox.maxX || fbox.minY * scaleFactor + origin.y > tileBbox.maxY || fbox.maxY * scaleFactor + origin.y < tileBbox.minY);
 };
-function painter(ctx, prepared_tiles, label_data, rules, bbox, origin, clip, debug) {
+function painter(ctx, z2, prepared_tilemaps, label_data, rules, bbox, origin, clip, debug) {
   let start = performance.now();
   ctx.save();
   ctx.miterLimit = 2;
-  for (var prepared_tile of prepared_tiles) {
-    let po = prepared_tile.origin;
-    let ps = prepared_tile.scale;
-    let dim = prepared_tile.dim;
-    ctx.save();
-    if (clip) {
-      ctx.beginPath();
-      let minX = Math.max(po.x - origin.x, bbox.minX - origin.x) - 0.5;
-      let minY = Math.max(po.y - origin.y, bbox.minY - origin.y) - 0.5;
-      let maxX = Math.min(po.x - origin.x + dim, bbox.maxX - origin.x) + 0.5;
-      let maxY = Math.min(po.y - origin.y + dim, bbox.maxY - origin.y) + 0.5;
-      ctx.rect(minX, minY, maxX - minX, maxY - minY);
-      ctx.clip();
-    }
-    ctx.translate(po.x - origin.x, po.y - origin.y);
-    if (clip) {
-      ctx.translate(dim / 2, dim / 2);
-      ctx.scale(1 + 1 / dim, 1 + 1 / dim);
-      ctx.translate(-dim / 2, -dim / 2);
-    }
+  for (var prepared_tilemap of prepared_tilemaps) {
     for (var rule of rules) {
-      if (rule.minzoom && prepared_tile.z < rule.minzoom)
+      if (rule.minzoom && z2 < rule.minzoom)
         continue;
-      if (rule.maxzoom && prepared_tile.z > rule.maxzoom)
+      if (rule.maxzoom && z2 > rule.maxzoom)
+        continue;
+      let prepared_tile = prepared_tilemap.get(rule.dataSource || "");
+      if (!prepared_tile)
         continue;
       var layer = prepared_tile.data.get(rule.dataLayer);
       if (layer === void 0)
         continue;
       if (rule.symbolizer.before)
         rule.symbolizer.before(ctx, prepared_tile.z);
+      ctx.save();
+      let po = prepared_tile.origin;
+      let dim = prepared_tile.dim;
+      let ps = prepared_tile.scale;
+      ctx.translate(po.x - origin.x, po.y - origin.y);
       if (rule.symbolizer.drawGrouped) {
         rule.symbolizer.drawGrouped(ctx, prepared_tile.z, layer, (f2) => isFeatureInTile(f2, ps, po, bbox), ps != 1 ? (g) => transformGeom(g, ps, new import_point_geometry5.default(0, 0)) : (g) => g, (f2) => rule.filter ? rule.filter(prepared_tile.z, f2) : true);
       } else if (rule.symbolizer.draw) {
@@ -3766,8 +3687,8 @@ function painter(ctx, prepared_tiles, label_data, rules, bbox, origin, clip, deb
           rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
         }
       }
+      ctx.restore();
     }
-    ctx.restore();
   }
   if (clip) {
     ctx.beginPath();
@@ -3825,10 +3746,11 @@ var covering = (display_zoom, tile_width, bbox) => {
   return retval;
 };
 var Index = class {
-  constructor(dim) {
+  constructor(dim, maxLabeledTiles) {
     this.tree = new import_rbush.default();
     this.current = new Map();
     this.dim = dim;
+    this.maxLabeledTiles = maxLabeledTiles;
   }
   has(tileKey) {
     return this.current.has(tileKey);
@@ -3894,6 +3816,13 @@ var Index = class {
     }
     return false;
   }
+  makeEntry(tileKey) {
+    if (this.current.get(tileKey)) {
+      console.log("consistency error 1");
+    }
+    let newSet = new Set();
+    this.current.set(tileKey, newSet);
+  }
   insert(label, order, tileKey) {
     let indexed_label = {
       anchor: label.anchor,
@@ -3905,13 +3834,12 @@ var Index = class {
       deduplicationDistance: label.deduplicationDistance
     };
     let entry = this.current.get(tileKey);
-    if (entry) {
-      entry.add(indexed_label);
-    } else {
+    if (!entry) {
       let newSet = new Set();
-      newSet.add(indexed_label);
       this.current.set(tileKey, newSet);
+      entry = newSet;
     }
+    entry.add(indexed_label);
     var wrapsLeft = false;
     var wrapsRight = false;
     for (let bbox of label.bboxes) {
@@ -3951,7 +3879,27 @@ var Index = class {
       }
     }
   }
-  prune(keyToRemove) {
+  pruneOrNoop(key_added) {
+    let added = key_added.split(":");
+    let max_key = void 0;
+    let max_dist = 0;
+    let keys_for_ds = 0;
+    for (var existing_key of this.current.keys()) {
+      let existing = existing_key.split(":");
+      if (existing[3] === added[3]) {
+        keys_for_ds++;
+        let dist = Math.sqrt(Math.pow(+existing[0] - +added[0], 2) + Math.pow(+existing[1] - +added[1], 2));
+        if (dist > max_dist) {
+          max_dist = dist;
+          max_key = existing_key;
+        }
+      }
+      if (max_key && keys_for_ds > this.maxLabeledTiles) {
+        this.pruneKey(max_key);
+      }
+    }
+  }
+  pruneKey(keyToRemove) {
     let indexed_labels = this.current.get(keyToRemove);
     if (!indexed_labels)
       return;
@@ -3983,16 +3931,22 @@ var Index = class {
 };
 var Labeler = class {
   constructor(z2, scratch, labelRules2, maxLabeledTiles, callback) {
-    this.index = new Index(256 * 1 << z2);
+    this.index = new Index(256 * 1 << z2, maxLabeledTiles);
     this.z = z2;
     this.scratch = scratch;
     this.labelRules = labelRules2;
     this.callback = callback;
-    this.maxLabeledTiles = maxLabeledTiles;
   }
-  layout(pt) {
+  layout(prepared_tilemap) {
     let start = performance.now();
-    let key = toIndex(pt.data_tile);
+    let keys_adding = new Set();
+    for (let [k, v] of prepared_tilemap) {
+      let key2 = toIndex(v.data_tile) + ":" + k;
+      if (!this.index.has(key2)) {
+        this.index.makeEntry(key2);
+        keys_adding.add(key2);
+      }
+    }
     let tiles_invalidated = new Set();
     for (let [order, rule] of this.labelRules.entries()) {
       if (rule.visible == false)
@@ -4000,6 +3954,13 @@ var Labeler = class {
       if (rule.minzoom && this.z < rule.minzoom)
         continue;
       if (rule.maxzoom && this.z > rule.maxzoom)
+        continue;
+      let dsName = rule.dataSource || "";
+      let pt = prepared_tilemap.get(dsName);
+      if (!pt)
+        continue;
+      let key2 = toIndex(pt.data_tile) + ":" + dsName;
+      if (!keys_adding.has(key2))
         continue;
       let layer = pt.data.get(rule.dataLayer);
       if (layer === void 0)
@@ -4037,25 +3998,28 @@ var Labeler = class {
               for (let conflict of conflicts) {
                 this.index.removeLabel(conflict);
                 for (let bbox of conflict.bboxes) {
-                  this.findInvalidatedTiles(tiles_invalidated, pt.dim, bbox, key);
+                  this.findInvalidatedTiles(tiles_invalidated, pt.dim, bbox, key2);
                 }
               }
-              this.index.insert(label, order, key);
+              this.index.insert(label, order, key2);
               label_added = true;
             }
           } else {
-            this.index.insert(label, order, key);
+            this.index.insert(label, order, key2);
             label_added = true;
           }
           if (label_added) {
             for (let bbox of label.bboxes) {
               if (bbox.maxX > pt.origin.x + pt.dim || bbox.minX < pt.origin.x || bbox.minY < pt.origin.y || bbox.maxY > pt.origin.y + pt.dim) {
-                this.findInvalidatedTiles(tiles_invalidated, pt.dim, bbox, key);
+                this.findInvalidatedTiles(tiles_invalidated, pt.dim, bbox, key2);
               }
             }
           }
         }
       }
+    }
+    for (var key of keys_adding) {
+      this.index.pruneOrNoop(key);
     }
     if (tiles_invalidated.size > 0 && this.callback) {
       this.callback(tiles_invalidated);
@@ -4070,29 +4034,16 @@ var Labeler = class {
       }
     }
   }
-  pruneCache(added) {
-    if (this.index.size() > this.maxLabeledTiles) {
-      let max_key = void 0;
-      let max_dist = 0;
-      for (let key of this.index.keys()) {
-        let split = key.split(":");
-        let dist = Math.sqrt(Math.pow(+split[0] - added.data_tile.x, 2) + Math.pow(+split[1] - added.data_tile.y, 2));
-        if (dist > max_dist) {
-          max_dist = dist;
-          max_key = key;
-        }
-      }
-      if (max_key)
-        this.index.prune(max_key);
+  add(prepared_tilemap) {
+    var all_added = true;
+    for (let [k, v] of prepared_tilemap) {
+      if (!this.index.has(toIndex(v.data_tile) + ":" + k))
+        all_added = false;
     }
-  }
-  add(prepared_tile) {
-    let idx = toIndex(prepared_tile.data_tile);
-    if (this.index.has(idx)) {
+    if (all_added) {
       return 0;
     } else {
-      let timing = this.layout(prepared_tile);
-      this.pruneCache(prepared_tile);
+      let timing = this.layout(prepared_tilemap);
       return timing;
     }
   }
@@ -4105,14 +4056,14 @@ var Labelers = class {
     this.maxLabeledTiles = maxLabeledTiles;
     this.callback = callback;
   }
-  add(prepared_tile) {
-    var labeler = this.labelers.get(prepared_tile.z);
+  add(z2, prepared_tilemap) {
+    var labeler = this.labelers.get(z2);
     if (labeler) {
-      return labeler.add(prepared_tile);
+      return labeler.add(prepared_tilemap);
     } else {
-      labeler = new Labeler(prepared_tile.z, this.scratch, this.labelRules, this.maxLabeledTiles, this.callback);
-      this.labelers.set(prepared_tile.z, labeler);
-      return labeler.add(prepared_tile);
+      labeler = new Labeler(z2, this.scratch, this.labelRules, this.maxLabeledTiles, this.callback);
+      this.labelers.set(z2, labeler);
+      return labeler.add(prepared_tilemap);
     }
   }
   getIndex(z2) {
@@ -4728,145 +4679,7 @@ var labelRules = (params, shade, language1, language2) => {
   ];
 };
 
-// src/frontends/static.ts
-var R2 = 6378137;
-var MAX_LATITUDE2 = 85.0511287798;
-var MAXCOORD2 = R2 * Math.PI;
-var project2 = (latlng) => {
-  let d = Math.PI / 180;
-  let constrained_lat = Math.max(Math.min(MAX_LATITUDE2, latlng[0]), -MAX_LATITUDE2);
-  let sin = Math.sin(constrained_lat * d);
-  return new import_point_geometry7.default(R2 * latlng[1] * d, R2 * Math.log((1 + sin) / (1 - sin)) / 2);
-};
-var unproject = (point) => {
-  var d = 180 / Math.PI;
-  return {
-    lat: (2 * Math.atan(Math.exp(point.y / R2)) - Math.PI / 2) * d,
-    lng: point.x * d / R2
-  };
-};
-var instancedProject = (origin, display_zoom) => {
-  return (latlng) => {
-    let projected = project2(latlng);
-    let normalized = new import_point_geometry7.default((projected.x + MAXCOORD2) / (MAXCOORD2 * 2), 1 - (projected.y + MAXCOORD2) / (MAXCOORD2 * 2));
-    return normalized.mult((1 << display_zoom) * 256).sub(origin);
-  };
-};
-var instancedUnproject = (origin, display_zoom) => {
-  return (point) => {
-    console.log(point);
-    let normalized = new import_point_geometry7.default(point.x, point.y).add(origin).div((1 << display_zoom) * 256);
-    let projected = new import_point_geometry7.default(normalized.x * (MAXCOORD2 * 2) - MAXCOORD2, (1 - normalized.y) * (MAXCOORD2 * 2) - MAXCOORD2);
-    return unproject(projected);
-  };
-};
-var getZoom = (degrees_lng, css_pixels) => {
-  let d = css_pixels * (360 / degrees_lng);
-  return Math.log2(d / 256);
-};
-var Static = class {
-  constructor(options) {
-    let theme = options.dark ? dark : light;
-    this.paint_rules = options.paint_rules || paintRules(theme, options.shade);
-    this.label_rules = options.label_rules || labelRules(theme, options.shade, options.language1, options.language2);
-    this.backgroundColor = options.backgroundColor;
-    let source;
-    if (options.url.url) {
-      source = new PmtilesSource(options.url, false);
-    } else if (options.url.endsWith(".pmtiles")) {
-      source = new PmtilesSource(options.url, false);
-    } else {
-      source = new ZxySource(options.url, false);
-    }
-    let maxDataZoom = 14;
-    if (options.maxDataZoom) {
-      maxDataZoom = options.maxDataZoom;
-    }
-    let levelDiff = options.levelDiff === void 0 ? 2 : options.levelDiff;
-    let cache = new TileCache(source, 256 * 1 << levelDiff);
-    this.view = new View(cache, maxDataZoom, levelDiff);
-    this.debug = options.debug || false;
-  }
-  drawContext(ctx, width, height, latlng, display_zoom) {
-    return __async(this, null, function* () {
-      let center = project2(latlng);
-      let normalized_center = new import_point_geometry7.default((center.x + MAXCOORD2) / (MAXCOORD2 * 2), 1 - (center.y + MAXCOORD2) / (MAXCOORD2 * 2));
-      let origin = normalized_center.clone().mult(Math.pow(2, display_zoom) * 256).sub(new import_point_geometry7.default(width / 2, height / 2));
-      let bbox = {
-        minX: origin.x,
-        minY: origin.y,
-        maxX: origin.x + width,
-        maxY: origin.y + height
-      };
-      let prepared_tiles = yield this.view.getBbox(display_zoom, bbox);
-      let start = performance.now();
-      let labeler = new Labeler(display_zoom, ctx, this.label_rules, 16, void 0);
-      for (var prepared_tile of prepared_tiles) {
-        yield labeler.add(prepared_tile);
-      }
-      if (this.backgroundColor) {
-        ctx.save();
-        ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, width, height);
-        ctx.restore();
-      }
-      let p2 = painter(ctx, prepared_tiles, labeler.index, this.paint_rules, bbox, origin, true, this.debug);
-      if (this.debug) {
-        ctx.save();
-        ctx.translate(-origin.x, -origin.y);
-        for (var prepared_tile of prepared_tiles) {
-          ctx.strokeStyle = this.debug;
-          ctx.strokeRect(prepared_tile.origin.x, prepared_tile.origin.y, prepared_tile.dim, prepared_tile.dim);
-        }
-        ctx.restore();
-      }
-      return {
-        elapsed: performance.now() - start,
-        project: instancedProject(origin, display_zoom),
-        unproject: instancedUnproject(origin, display_zoom)
-      };
-    });
-  }
-  drawCanvas(_0, _1, _2) {
-    return __async(this, arguments, function* (canvas, latlng, display_zoom, options = {}) {
-      let dpr = window.devicePixelRatio;
-      let width = canvas.clientWidth;
-      let height = canvas.clientHeight;
-      if (!canvas.sizeSet) {
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        canvas.sizeSet = true;
-      }
-      canvas.lang = options.lang;
-      let ctx = canvas.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return this.drawContext(ctx, width, height, latlng, display_zoom);
-    });
-  }
-  drawContextBounds(ctx, top_left, bottom_right, width, height) {
-    return __async(this, null, function* () {
-      let delta_degrees = bottom_right[0] - top_left[0];
-      let center = [
-        (top_left[1] + bottom_right[1]) / 2,
-        (top_left[0] + bottom_right[0]) / 2
-      ];
-      return this.drawContext(ctx, width, height, center, getZoom(delta_degrees, width));
-    });
-  }
-  drawCanvasBounds(_0, _1, _2, _3) {
-    return __async(this, arguments, function* (canvas, top_left, bottom_right, width, options = {}) {
-      let delta_degrees = bottom_right[0] - top_left[0];
-      let center = [
-        (top_left[1] + bottom_right[1]) / 2,
-        (top_left[0] + bottom_right[0]) / 2
-      ];
-      return this.drawCanvas(canvas, center, getZoom(delta_degrees, width), options);
-    });
-  }
-};
-
 // src/frontends/leaflet.ts
-var import_point_geometry8 = __toModule(require_point_geometry());
 var timer = (duration) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -4898,24 +4711,8 @@ var leafletLayer = (options) => {
       this.backgroundColor = options2.backgroundColor;
       this.lastRequestedZ = void 0;
       this.xray = options2.xray;
-      let source;
-      if (options2.url.url) {
-        source = new PmtilesSource(options2.url, true);
-      } else if (options2.url.endsWith(".pmtiles")) {
-        source = new PmtilesSource(options2.url, true);
-      } else {
-        source = new ZxySource(options2.url, true);
-      }
-      let maxDataZoom = 14;
-      if (options2.maxDataZoom) {
-        maxDataZoom = options2.maxDataZoom;
-      }
-      this.levelDiff = options2.levelDiff === void 0 ? 2 : options2.levelDiff;
-      this.eventQueue = new EventQueue();
-      this.subscribeChildEvents();
       this.tasks = options2.tasks || [];
-      let cache = new TileCache(source, 256 * 1 << this.levelDiff);
-      this.view = new View(cache, maxDataZoom, this.levelDiff, this.eventQueue);
+      this.views = sourcesToViews(options2);
       this.debug = options2.debug;
       let scratch = document.createElement("canvas").getContext("2d");
       this.scratch = scratch;
@@ -4939,14 +4736,23 @@ var leafletLayer = (options) => {
     }) {
       return __async(this, null, function* () {
         this.lastRequestedZ = coords.z;
-        var prepared_tile;
-        try {
-          prepared_tile = yield this.view.getDisplayTile(coords);
-        } catch (e2) {
-          if (e2.name == "AbortError")
-            return;
-          else
-            throw e2;
+        let promises = [];
+        for (const [k, v] of this.views) {
+          let promise = v.getDisplayTile(coords);
+          promises.push({ key: k, promise });
+        }
+        let tile_responses = yield Promise.all(promises.map((o2) => {
+          return o2.promise.then((v) => {
+            return { status: "fulfilled", value: v, key: o2.key };
+          }, (error) => {
+            return { status: "rejected", reason: error, key: o2.key };
+          });
+        }));
+        let prepared_tilemap = new Map();
+        for (const tile_response of tile_responses) {
+          if (tile_response.status === "fulfilled") {
+            prepared_tilemap.set(tile_response.key, tile_response.value);
+          }
         }
         if (element.key != key)
           return;
@@ -4957,12 +4763,12 @@ var leafletLayer = (options) => {
           return;
         if (this.lastRequestedZ !== coords.z)
           return;
-        let layout_time = yield this.labelers.add(prepared_tile);
+        let layout_time = this.labelers.add(coords.z, prepared_tilemap);
         if (element.key != key)
           return;
         if (this.lastRequestedZ !== coords.z)
           return;
-        let label_data = this.labelers.getIndex(prepared_tile.z);
+        let label_data = this.labelers.getIndex(coords.z);
         if (!this._map)
           return;
         let center = this._map.getCenter().wrap();
@@ -4980,7 +4786,7 @@ var leafletLayer = (options) => {
           maxX: 256 * (coords.x + 1) + BUF,
           maxY: 256 * (coords.y + 1) + BUF
         };
-        let origin = new import_point_geometry8.default(256 * coords.x, 256 * coords.y);
+        let origin = new import_point_geometry7.default(256 * coords.x, 256 * coords.y);
         element.width = this.tile_size;
         element.height = this.tile_size;
         let ctx = element.getContext("2d");
@@ -4993,19 +4799,12 @@ var leafletLayer = (options) => {
           ctx.restore();
         }
         var painting_time = 0;
-        if (this.xray) {
-          painting_time = xray(ctx, [prepared_tile], bbox, origin, false, this.debug);
-        } else {
-          painting_time = painter(ctx, [prepared_tile], label_data, this.paint_rules, bbox, origin, false, this.debug);
-        }
+        painting_time = painter(ctx, coords.z, [prepared_tilemap], label_data, this.paint_rules, bbox, origin, false, this.debug);
         if (this.debug) {
-          let data_tile = prepared_tile.data_tile;
           ctx.save();
           ctx.fillStyle = this.debug;
           ctx.font = "600 12px sans-serif";
           ctx.fillText(coords.z + " " + coords.x + " " + coords.y, 4, 14);
-          ctx.font = "200 12px sans-serif";
-          ctx.fillText(data_tile.z + " " + data_tile.x + " " + data_tile.y, 4, 28);
           ctx.font = "600 10px sans-serif";
           if (painting_time > 8) {
             ctx.fillText(painting_time.toFixed() + " ms paint", 4, 42);
@@ -5014,12 +4813,12 @@ var leafletLayer = (options) => {
             ctx.fillText(layout_time.toFixed() + " ms layout", 4, 56);
           }
           ctx.strokeStyle = this.debug;
-          ctx.lineWidth = coords.x / (1 << this.levelDiff) === data_tile.x ? 2.5 : 0.5;
+          ctx.lineWidth = 0.5;
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(0, 256);
           ctx.stroke();
-          ctx.lineWidth = coords.y / (1 << this.levelDiff) === data_tile.y ? 2.5 : 0.5;
+          ctx.lineWidth = 0.5;
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(256, 0);
@@ -5076,7 +4875,7 @@ var leafletLayer = (options) => {
       });
     }
     queryFeatures(lng, lat) {
-      return this.view.queryFeatures(lng, lat, this._map.getZoom());
+      return this.views.get("").queryFeatures(lng, lat, this._map.getZoom());
     }
     inspect(layer) {
       return (ev) => {
@@ -5480,7 +5279,7 @@ function json_style(obj, fontsubmap) {
 }
 
 // src/dd-symbolizers.ts
-var import_point_geometry9 = __toModule(require_point_geometry());
+var import_point_geometry8 = __toModule(require_point_geometry());
 var TextPlacements;
 (function(TextPlacements2) {
   TextPlacements2[TextPlacements2["N"] = 1] = "N";
@@ -5522,7 +5321,7 @@ var DataDrivenOffsetSymbolizer = class {
   place(layout, geom, feature) {
     if (feature.geomType !== GeomType.Point)
       return void 0;
-    let placed = this.symbolizer.place(layout, [[new import_point_geometry9.default(0, 0)]], feature);
+    let placed = this.symbolizer.place(layout, [[new import_point_geometry8.default(0, 0)]], feature);
     if (!placed || placed.length == 0)
       return void 0;
     const anchor = geom[0][0];
@@ -5550,7 +5349,7 @@ var DataDrivenOffsetSymbolizer = class {
       const xAxisOffset = this.computeXAxisOffset(offsetXValue, firstLabelBbox, placement);
       const yAxisOffset = this.computeYAxisOffset(offsetYValue, firstLabelBbox, placement);
       const justify = this.computeJustify(justifyValue, placement);
-      const origin = new import_point_geometry9.default(xAxisOffset, yAxisOffset);
+      const origin = new import_point_geometry8.default(xAxisOffset, yAxisOffset);
       return this.placeLabelInPoint(anchor, origin, layout, firstLabel, justify);
     }
     return void 0;
@@ -5641,7 +5440,6 @@ export {
   PolygonSymbolizer,
   ShieldSymbolizer,
   Sprites,
-  Static,
   TextPlacements,
   TextSymbolizer,
   TileCache,
@@ -5655,7 +5453,6 @@ export {
   exp,
   filterFn,
   getFont,
-  getZoom,
   isCCW,
   isInRing,
   json_style,
@@ -5670,11 +5467,11 @@ export {
   pointInPolygon,
   pointMinDistToLines,
   pointMinDistToPoints,
+  sourcesToViews,
   step,
   toIndex,
   transformGeom,
   widthFn,
-  wrap,
-  xray
+  wrap
 };
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
