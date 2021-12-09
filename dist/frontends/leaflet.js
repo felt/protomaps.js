@@ -265,20 +265,23 @@ const leafletLayer = (options) => {
             return map.off("click", this.inspector);
         }
         updateSource(name, options) {
-            if (!options.source)
+            if (!options.source) {
                 this.views.delete(name);
-            this.views.set(name, sourceToView(options.source));
-            if (options.paint_rules) {
-                this.paint_rules = this.paint_rules.filter((r) => {
-                    r.dataSource !== name;
-                });
-                this.paint_rules = this.paint_rules.concat(options.paint_rules);
             }
-            if (options.label_rules) {
-                this.label_rules = this.label_rules.filter((r) => {
-                    r.dataSource !== name;
-                });
-                this.label_rules = this.label_rules.concat(options.label_rules);
+            else {
+                this.views.set(name, sourceToView(options.source));
+                if (options.paint_rules) {
+                    this.paint_rules = this.paint_rules.filter((r) => {
+                        r.dataSource !== name;
+                    });
+                    this.paint_rules = this.paint_rules.concat(options.paint_rules);
+                }
+                if (options.label_rules) {
+                    this.label_rules = this.label_rules.filter((r) => {
+                        r.dataSource !== name;
+                    });
+                    this.label_rules = this.label_rules.concat(options.label_rules);
+                }
             }
         }
         subscribeChildEvents() {

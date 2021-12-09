@@ -5046,20 +5046,22 @@ var protomaps = (() => {
         return map.off("click", this.inspector);
       }
       updateSource(name, options2) {
-        if (!options2.source)
+        if (!options2.source) {
           this.views.delete(name);
-        this.views.set(name, sourceToView(options2.source));
-        if (options2.paint_rules) {
-          this.paint_rules = this.paint_rules.filter((r2) => {
-            r2.dataSource !== name;
-          });
-          this.paint_rules = this.paint_rules.concat(options2.paint_rules);
-        }
-        if (options2.label_rules) {
-          this.label_rules = this.label_rules.filter((r2) => {
-            r2.dataSource !== name;
-          });
-          this.label_rules = this.label_rules.concat(options2.label_rules);
+        } else {
+          this.views.set(name, sourceToView(options2.source));
+          if (options2.paint_rules) {
+            this.paint_rules = this.paint_rules.filter((r2) => {
+              r2.dataSource !== name;
+            });
+            this.paint_rules = this.paint_rules.concat(options2.paint_rules);
+          }
+          if (options2.label_rules) {
+            this.label_rules = this.label_rules.filter((r2) => {
+              r2.dataSource !== name;
+            });
+            this.label_rules = this.label_rules.concat(options2.label_rules);
+          }
         }
       }
       subscribeChildEvents() {
