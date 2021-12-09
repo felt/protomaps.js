@@ -1725,6 +1725,7 @@ var protomaps = (() => {
     pointInPolygon: () => pointInPolygon,
     pointMinDistToLines: () => pointMinDistToLines,
     pointMinDistToPoints: () => pointMinDistToPoints,
+    sourceToView: () => sourceToView,
     sourcesToViews: () => sourcesToViews,
     step: () => step,
     toIndex: () => toIndex,
@@ -3689,28 +3690,28 @@ var protomaps = (() => {
       return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
     }
   };
+  var sourceToView = (o2) => {
+    const level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
+    const maxDataZoom = o2.maxDataZoom || 14;
+    let source;
+    if (o2.url.url) {
+      source = new PmtilesSource(o2.url, true);
+    } else if (o2.url.endsWith(".pmtiles")) {
+      source = new PmtilesSource(o2.url, true);
+    } else {
+      source = new ZxySource(o2.url, true);
+    }
+    const cache = new TileCache(source, 256 * 1 << level_diff);
+    return new View(cache, maxDataZoom, level_diff);
+  };
   var sourcesToViews = (options) => {
-    let sourceToViews = (o2) => {
-      let level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
-      let maxDataZoom = o2.maxDataZoom || 14;
-      let source;
-      if (o2.url.url) {
-        source = new PmtilesSource(o2.url, true);
-      } else if (o2.url.endsWith(".pmtiles")) {
-        source = new PmtilesSource(o2.url, true);
-      } else {
-        source = new ZxySource(o2.url, true);
-      }
-      let cache = new TileCache(source, 256 * 1 << level_diff);
-      return new View(cache, maxDataZoom, level_diff);
-    };
-    let sources = new Map();
+    const sources = new Map();
     if (options.sources) {
       for (const [key, value] of Object.entries(options.sources)) {
-        sources.set(key, sourceToViews(value));
+        sources.set(key, sourceToView(value));
       }
     } else {
-      sources.set("", sourceToViews(options));
+      sources.set("", sourceToView(options));
     }
     return sources;
   };
@@ -5043,6 +5044,21 @@ var protomaps = (() => {
       }
       removeInspector(map) {
         return map.off("click", this.inspector);
+      }
+      updateSource(name, options2) {
+        this.views.set(name, sourceToView(options2.source));
+        if (options2.paint_rules) {
+          this.paint_rules = this.paint_rules.filter((r2) => {
+            r2.dataSource !== name;
+          });
+          this.paint_rules = this.paint_rules.concat(options2.paint_rules);
+        }
+        if (options2.label_rules) {
+          this.label_rules = this.label_rules.filter((r2) => {
+            r2.dataSource !== name;
+          });
+          this.label_rules = this.label_rules.concat(options2.label_rules);
+        }
       }
       subscribeChildEvents() {
         this.eventQueue.subscribe(ProtomapsEvent.TileFetchStart, this.fireEvent);

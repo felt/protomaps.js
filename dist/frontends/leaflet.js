@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { sourcesToViews } from "../view";
+import { sourcesToViews, sourceToView } from "../view";
 import { painter } from "../painter";
 import { Labelers } from "../labeler";
 import { light } from "../default_style/light";
@@ -263,6 +263,21 @@ const leafletLayer = (options) => {
         }
         removeInspector(map) {
             return map.off("click", this.inspector);
+        }
+        updateSource(name, options) {
+            this.views.set(name, sourceToView(options.source));
+            if (options.paint_rules) {
+                this.paint_rules = this.paint_rules.filter((r) => {
+                    r.dataSource !== name;
+                });
+                this.paint_rules = this.paint_rules.concat(options.paint_rules);
+            }
+            if (options.label_rules) {
+                this.label_rules = this.label_rules.filter((r) => {
+                    r.dataSource !== name;
+                });
+                this.label_rules = this.label_rules.concat(options.label_rules);
+            }
         }
         subscribeChildEvents() {
             this.eventQueue.subscribe(ProtomapsEvent.TileFetchStart, this.fireEvent);

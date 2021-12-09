@@ -3,14 +3,13 @@ declare var L: any;
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 
-import { Zxy, TileCache } from "../tilecache";
-import { View, PreparedTile, sourcesToViews } from "../view";
-import { painter } from "../painter";
-import { Labelers } from "../labeler";
+import { PreparedTile, sourcesToViews, sourceToView } from "../view";
+import { painter, Rule } from "../painter";
+import { Labelers, LabelRule } from "../labeler";
 import { light } from "../default_style/light";
 import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
-import { EventQueue, ProtomapsEvent } from "../events";
+import { ProtomapsEvent } from "../events";
 
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
@@ -359,6 +358,23 @@ const leafletLayer = (options: any): any => {
 
     public removeInspector(map: any) {
       return map.off("click", this.inspector);
+    }
+
+    public updateSource(name: string, options: any) {
+      this.views.set(name, sourceToView(options.source));
+      if (options.paint_rules) {
+        this.paint_rules = this.paint_rules.filter((r: Rule) => {
+          r.dataSource !== name;
+        });
+        this.paint_rules = this.paint_rules.concat(options.paint_rules);
+      }
+
+      if (options.label_rules) {
+        this.label_rules = this.label_rules.filter((r: LabelRule) => {
+          r.dataSource !== name;
+        });
+        this.label_rules = this.label_rules.concat(options.label_rules);
+      }
     }
 
     private subscribeChildEvents() {

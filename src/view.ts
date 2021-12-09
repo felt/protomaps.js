@@ -233,29 +233,29 @@ export class View {
   }
 }
 
-export let sourcesToViews = (options: any) => {
-  let sourceToViews = (o: any) => {
-    let level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;
-    let maxDataZoom = o.maxDataZoom || 14;
-    let source;
-    if (o.url.url) {
-      source = new PmtilesSource(o.url, true);
-    } else if (o.url.endsWith(".pmtiles")) {
-      source = new PmtilesSource(o.url, true);
-    } else {
-      source = new ZxySource(o.url, true);
-    }
-    let cache = new TileCache(source, (256 * 1) << level_diff);
-    return new View(cache, maxDataZoom, level_diff);
-  };
+export const sourceToView = (o: any) => {
+  const level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;
+  const maxDataZoom = o.maxDataZoom || 14;
+  let source;
+  if (o.url.url) {
+    source = new PmtilesSource(o.url, true);
+  } else if (o.url.endsWith(".pmtiles")) {
+    source = new PmtilesSource(o.url, true);
+  } else {
+    source = new ZxySource(o.url, true);
+  }
+  const cache = new TileCache(source, (256 * 1) << level_diff);
+  return new View(cache, maxDataZoom, level_diff);
+};
 
-  let sources = new Map<string, View>();
+export const sourcesToViews = (options: any) => {
+  const sources = new Map<string, View>();
   if (options.sources) {
     for (const [key, value] of Object.entries(options.sources)) {
-      sources.set(key, sourceToViews(value));
+      sources.set(key, sourceToView(value));
     }
   } else {
-    sources.set("", sourceToViews(options));
+    sources.set("", sourceToView(options));
   }
   return sources;
 };
