@@ -5046,6 +5046,8 @@ var protomaps = (() => {
         return map.off("click", this.inspector);
       }
       updateSource(name, options2) {
+        if (!options2.source)
+          this.views.delete(name);
         this.views.set(name, sourceToView(options2.source));
         if (options2.paint_rules) {
           this.paint_rules = this.paint_rules.filter((r2) => {

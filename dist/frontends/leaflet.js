@@ -265,6 +265,8 @@ const leafletLayer = (options) => {
             return map.off("click", this.inspector);
         }
         updateSource(name, options) {
+            if (!options.source)
+                this.views.delete(name);
             this.views.set(name, sourceToView(options.source));
             if (options.paint_rules) {
                 this.paint_rules = this.paint_rules.filter((r) => {

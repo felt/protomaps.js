@@ -361,6 +361,7 @@ const leafletLayer = (options: any): any => {
     }
 
     public updateSource(name: string, options: any) {
+      if (!options.source) this.views.delete(name);
       this.views.set(name, sourceToView(options.source));
       if (options.paint_rules) {
         this.paint_rules = this.paint_rules.filter((r: Rule) => {
