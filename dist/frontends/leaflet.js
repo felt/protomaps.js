@@ -139,7 +139,7 @@ const leafletLayer = (options) => {
                     ctx.restore();
                 }
                 var painting_time = 0;
-                painting_time = painter(ctx, coords.z, [prepared_tilemap], label_data, this.paint_rules, bbox, origin, false, this.debug);
+                painting_time = painter(ctx, coords.z, [prepared_tilemap], label_data, this.paint_rules, bbox, origin, false, this.debug, this.xray);
                 if (this.debug) {
                     ctx.save();
                     ctx.fillStyle = this.debug;
@@ -230,6 +230,12 @@ const leafletLayer = (options) => {
                 let firstRow = true;
                 for (var [sourceName, results] of resultsBySourceName) {
                     for (var result of results) {
+                        if (this.xray && this.xray !== true) {
+                            if (!(this.xray.dataSource === sourceName &&
+                                this.xray.dataLayer === result.layerName)) {
+                                continue;
+                            }
+                        }
                         content =
                             content +
                                 `<div style="margin-top:${firstRow ? 0 : 0.5}em">${typeGlyphs[result.feature.geomType - 1]} <b>${sourceName} ${sourceName ? "/" : ""} ${result.layerName}</b> ${result.feature.id || ""}</div>`;

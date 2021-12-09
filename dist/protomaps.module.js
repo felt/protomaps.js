@@ -3648,11 +3648,68 @@ var isFeatureInTile = (f2, scaleFactor, origin, tileBbox) => {
   const fbox = f2.bbox;
   return !(fbox.maxX * scaleFactor + origin.x < tileBbox.minX || fbox.minX * scaleFactor + origin.x > tileBbox.maxX || fbox.minY * scaleFactor + origin.y > tileBbox.maxY || fbox.maxY * scaleFactor + origin.y < tileBbox.minY);
 };
-function painter(ctx, z2, prepared_tilemaps, label_data, rules, bbox, origin, clip, debug) {
+var xray_symbolizers = (dataSource, dataLayer, color) => {
+  return [
+    {
+      dataSource,
+      dataLayer,
+      symbolizer: new CircleSymbolizer({
+        opacity: 0.7,
+        fill: color,
+        radius: 4
+      }),
+      filter: (z2, f2) => {
+        return f2.geomType == GeomType.Point;
+      }
+    },
+    {
+      dataSource,
+      dataLayer,
+      symbolizer: new LineSymbolizer({
+        opacity: 0.5,
+        color,
+        width: 2
+      }),
+      filter: (z2, f2) => {
+        return f2.geomType == GeomType.Line;
+      }
+    },
+    {
+      dataSource,
+      dataLayer,
+      symbolizer: new PolygonSymbolizer({
+        opacity: 0.5,
+        fill: color,
+        stroke: color,
+        width: 1
+      }),
+      filter: (z2, f2) => {
+        return f2.geomType == GeomType.Polygon;
+      }
+    }
+  ];
+};
+var xray_rules = (prepared_tilemap, xray) => {
+  var rules = [];
+  for (var [dataSource, tile] of prepared_tilemap) {
+    for (var dataLayer of tile.data.keys()) {
+      if (dataSource === xray.dataSource && dataLayer === xray.dataLayer) {
+      } else {
+        rules = rules.concat(xray_symbolizers(dataSource, dataLayer, "#999"));
+      }
+    }
+  }
+  rules = rules.concat(xray_symbolizers(xray.dataSource || "", xray.dataLayer, "steelblue"));
+  return rules;
+};
+function painter(ctx, z2, prepared_tilemaps, label_data, rules, bbox, origin, clip, debug, xray) {
   let start = performance.now();
   ctx.save();
   ctx.miterLimit = 2;
   for (var prepared_tilemap of prepared_tilemaps) {
+    if (xray) {
+      rules = xray_rules(prepared_tilemap, xray);
+    }
     for (var rule of rules) {
       if (rule.minzoom && z2 < rule.minzoom)
         continue;
@@ -3695,7 +3752,7 @@ function painter(ctx, z2, prepared_tilemaps, label_data, rules, bbox, origin, cl
     ctx.rect(bbox.minX - origin.x, bbox.minY - origin.y, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY);
     ctx.clip();
   }
-  if (label_data) {
+  if (label_data && !xray) {
     let matches = label_data.searchBbox(bbox, Infinity);
     for (var label of matches) {
       ctx.save();
@@ -4799,7 +4856,7 @@ var leafletLayer = (options) => {
           ctx.restore();
         }
         var painting_time = 0;
-        painting_time = painter(ctx, coords.z, [prepared_tilemap], label_data, this.paint_rules, bbox, origin, false, this.debug);
+        painting_time = painter(ctx, coords.z, [prepared_tilemap], label_data, this.paint_rules, bbox, origin, false, this.debug, this.xray);
         if (this.debug) {
           ctx.save();
           ctx.fillStyle = this.debug;
@@ -4890,6 +4947,11 @@ var leafletLayer = (options) => {
         let firstRow = true;
         for (var [sourceName, results] of resultsBySourceName) {
           for (var result of results) {
+            if (this.xray && this.xray !== true) {
+              if (!(this.xray.dataSource === sourceName && this.xray.dataLayer === result.layerName)) {
+                continue;
+              }
+            }
             content = content + `<div style="margin-top:${firstRow ? 0 : 0.5}em">${typeGlyphs[result.feature.geomType - 1]} <b>${sourceName} ${sourceName ? "/" : ""} ${result.layerName}</b> ${result.feature.id || ""}</div>`;
             for (const prop in result.feature.props) {
               content = content + `<div style="font-size:0.9em">${prop} = ${result.feature.props[prop]}</div>`;
