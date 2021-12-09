@@ -4948,27 +4948,32 @@ var protomaps = (() => {
         });
       }
       queryFeatures(lng, lat) {
-        return this.views.get("").queryFeatures(lng, lat, this._map.getZoom());
+        let featuresBySourceName = new Map();
+        for (var [sourceName, view] of this.views) {
+          featuresBySourceName.set(sourceName, view.queryFeatures(lng, lat, this._map.getZoom()));
+        }
+        return featuresBySourceName;
       }
       inspect(layer) {
         return (ev) => {
-          let typeNames = ["Point", "Line", "Polygon"];
+          let typeGlyphs = ["\u25CE", "\u27CD", "\u25FB"];
           let wrapped = layer._map.wrapLatLng(ev.latlng);
-          let results = layer.queryFeatures(wrapped.lng, wrapped.lat);
+          let resultsBySourceName = layer.queryFeatures(wrapped.lng, wrapped.lat);
           var content = "";
-          for (var i2 = 0; i2 < results.length; i2++) {
-            let result = results[i2];
-            content = content + `<div><b>${result.layerName}</b> ${typeNames[result.feature.geomType - 1]} ${result.feature.id}</div>`;
-            for (const prop in result.feature.props) {
-              content = content + `<div>${prop}=${result.feature.props[prop]}</div>`;
+          let firstRow = true;
+          for (var [sourceName, results] of resultsBySourceName) {
+            for (var result of results) {
+              content = content + `<div style="margin-top:${firstRow ? 0 : 0.5}em">${typeGlyphs[result.feature.geomType - 1]} <b>${sourceName} ${sourceName ? "/" : ""} ${result.layerName}</b> ${result.feature.id || ""}</div>`;
+              for (const prop in result.feature.props) {
+                content = content + `<div style="font-size:0.9em">${prop} = ${result.feature.props[prop]}</div>`;
+              }
+              firstRow = false;
             }
-            if (i2 < results.length - 1)
-              content = content + "<hr/>";
           }
-          if (results.length == 0) {
+          if (firstRow) {
             content = "No features.";
           }
-          L.popup().setLatLng(ev.latlng).setContent(content).openOn(layer._map);
+          L.popup().setLatLng(ev.latlng).setContent('<div style="max-height:400px;overflow-y:scroll;padding-right:8px">' + content + "</div>").openOn(layer._map);
         };
       }
       addInspector(map) {
