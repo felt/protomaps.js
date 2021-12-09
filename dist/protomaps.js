@@ -5051,15 +5051,11 @@ var protomaps = (() => {
         } else {
           this.views.set(name, sourceToView(options2.source));
           if (options2.paint_rules) {
-            this.paint_rules = this.paint_rules.filter((r2) => {
-              r2.dataSource !== name;
-            });
+            this.paint_rules = this.paint_rules.filter((r2) => r2.dataSource !== name);
             this.paint_rules = this.paint_rules.concat(options2.paint_rules);
           }
           if (options2.label_rules) {
-            this.label_rules = this.label_rules.filter((r2) => {
-              r2.dataSource !== name;
-            });
+            this.label_rules = this.label_rules.filter((r2) => r2.dataSource !== name);
             this.label_rules = this.label_rules.concat(options2.label_rules);
           }
         }

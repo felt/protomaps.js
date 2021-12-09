@@ -366,16 +366,16 @@ const leafletLayer = (options: any): any => {
       } else {
         this.views.set(name, sourceToView(options.source));
         if (options.paint_rules) {
-          this.paint_rules = this.paint_rules.filter((r: Rule) => {
-            r.dataSource !== name;
-          });
+          this.paint_rules = this.paint_rules.filter(
+            (r: Rule) => r.dataSource !== name
+          );
           this.paint_rules = this.paint_rules.concat(options.paint_rules);
         }
 
         if (options.label_rules) {
-          this.label_rules = this.label_rules.filter((r: LabelRule) => {
-            r.dataSource !== name;
-          });
+          this.label_rules = this.label_rules.filter(
+            (r: LabelRule) => r.dataSource !== name
+          );
           this.label_rules = this.label_rules.concat(options.label_rules);
         }
       }
