@@ -8,9 +8,13 @@ export interface Rule {
     id?: string;
     minzoom?: number;
     maxzoom?: number;
+    dataSource?: string;
     dataLayer: string;
     symbolizer: PaintSymbolizer;
     filter?: Filter;
 }
-export declare function xray(ctx: any, prepared_tiles: PreparedTile[], bbox: Bbox, origin: Point, clip: boolean, debug: string): number;
-export declare function painter(ctx: any, prepared_tiles: PreparedTile[], label_data: Index, rules: Rule[], bbox: Bbox, origin: Point, clip: boolean, debug: string): number;
+export interface XraySelection {
+    dataSource?: string;
+    dataLayer: string;
+}
+export declare function painter(ctx: any, z: number, prepared_tilemaps: Map<string, PreparedTile>[], label_data: Index, rules: Rule[], bbox: Bbox, origin: Point, clip: boolean, debug: string, xray: XraySelection): number;

@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 import { ProtomapsEvent } from "./events";
+import { TileCache, ZxySource, PmtilesSource, } from "./tilecache";
 // TODO make this lazy
 export const transformGeom = (geom, scale, translate) => {
     let retval = [];
@@ -180,3 +181,31 @@ export class View {
         return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
     }
 }
+export const sourceToView = (o) => {
+    const level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;
+    const maxDataZoom = o.maxDataZoom || 14;
+    let source;
+    if (o.url.url) {
+        source = new PmtilesSource(o.url, true);
+    }
+    else if (o.url.endsWith(".pmtiles")) {
+        source = new PmtilesSource(o.url, true);
+    }
+    else {
+        source = new ZxySource(o.url, true);
+    }
+    const cache = new TileCache(source, (256 * 1) << level_diff);
+    return new View(cache, maxDataZoom, level_diff);
+};
+export const sourcesToViews = (options) => {
+    const sources = new Map();
+    if (options.sources) {
+        for (const [key, value] of Object.entries(options.sources)) {
+            sources.set(key, sourceToView(value));
+        }
+    }
+    else {
+        sources.set("", sourceToView(options));
+    }
+    return sources;
+};
