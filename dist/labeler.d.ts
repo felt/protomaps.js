@@ -32,6 +32,7 @@ export interface LabelRule {
     id?: string;
     minzoom?: number;
     maxzoom?: number;
+    dataSource?: string;
     dataLayer: string;
     symbolizer: LabelSymbolizer;
     filter?: Filter;
@@ -46,7 +47,8 @@ export declare class Index {
     tree: RBush;
     current: Map<string, Set<IndexedLabel>>;
     dim: number;
-    constructor(dim: number);
+    maxLabeledTiles: number;
+    constructor(dim: number, maxLabeledTiles: number);
     has(tileKey: string): boolean;
     size(): number;
     keys(): IterableIterator<string>;
@@ -55,8 +57,10 @@ export declare class Index {
     bboxCollides(bbox: Bbox, order: number): boolean;
     labelCollides(label: Label, order: number): boolean;
     deduplicationCollides(label: Label): boolean;
+    makeEntry(tileKey: string): void;
     insert(label: Label, order: number, tileKey: string): void;
-    prune(keyToRemove: string): void;
+    pruneOrNoop(key_added: string): void;
+    pruneKey(keyToRemove: string): void;
     removeLabel(labelToRemove: IndexedLabel): void;
 }
 export declare class Labeler {
@@ -65,12 +69,10 @@ export declare class Labeler {
     scratch: any;
     labelRules: LabelRule[];
     callback?: TileInvalidationCallback;
-    maxLabeledTiles: number;
     constructor(z: number, scratch: any, labelRules: LabelRule[], maxLabeledTiles: number, callback?: TileInvalidationCallback);
     private layout;
     private findInvalidatedTiles;
-    private pruneCache;
-    add(prepared_tile: PreparedTile): number;
+    add(prepared_tilemap: Map<string, PreparedTile>): number;
 }
 export declare class Labelers {
     labelers: Map<number, Labeler>;
@@ -79,7 +81,7 @@ export declare class Labelers {
     maxLabeledTiles: number;
     callback: TileInvalidationCallback;
     constructor(scratch: any, labelRules: LabelRule[], maxLabeledTiles: number, callback: TileInvalidationCallback);
-    add(prepared_tile: PreparedTile): number;
+    add(z: number, prepared_tilemap: Map<string, PreparedTile>): number;
     getIndex(z: number): RBush;
 }
 export {};
