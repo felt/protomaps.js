@@ -4974,6 +4974,10 @@ var leafletLayer = (options) => {
     updateSource(name, options2) {
       if (!options2.source) {
         this.views.delete(name);
+        const prevLabelRules = this.label_rules.length;
+        this.label_rules = this.label_rules.filter((r2) => r2.dataSource !== name);
+        if (prevLabelRules !== this.label_rules.length)
+          this.clearLayout();
       } else {
         this.views.set(name, sourceToView(options2.source));
         if (options2.paint_rules) {

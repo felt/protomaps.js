@@ -266,7 +266,13 @@ const leafletLayer = (options) => {
         }
         updateSource(name, options) {
             if (!options.source) {
+                // Remove the view
                 this.views.delete(name);
+                // Remove the label rules
+                const prevLabelRules = this.label_rules.length;
+                this.label_rules = this.label_rules.filter((r) => r.dataSource !== name);
+                if (prevLabelRules !== this.label_rules.length)
+                    this.clearLayout();
             }
             else {
                 this.views.set(name, sourceToView(options.source));
