@@ -183,7 +183,7 @@ export class View {
 }
 export const sourceToView = (o) => {
     const level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;
-    const maxDataZoom = o.maxDataZoom || 14;
+    const maxDataZoom = o.maxDataZoom === undefined ? 14 : o.maxDataZoom;
     let source;
     if (o.url.url) {
         source = new PmtilesSource(o.url, true);

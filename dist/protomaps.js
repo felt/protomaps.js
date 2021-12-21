@@ -3692,7 +3692,7 @@ var protomaps = (() => {
   };
   var sourceToView = (o2) => {
     const level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
-    const maxDataZoom = o2.maxDataZoom || 14;
+    const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
     let source;
     if (o2.url.url) {
       source = new PmtilesSource(o2.url, true);
