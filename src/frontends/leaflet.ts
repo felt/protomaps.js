@@ -38,6 +38,18 @@ const reflect = (promise: Promise<Status>) => {
   );
 };
 
+type DataSourceOptions = {
+  url: string;
+  maxDataZoom?: number;
+  levelDiff?: number;
+};
+type DataSource = {
+  name: string;
+  options: DataSourceOptions;
+  paintRules: Rule[];
+  labelRules: LabelRule[];
+};
+
 const leafletLayer = (options: any): any => {
   class LeafletLayer extends L.GridLayer {
     constructor(options: any) {
@@ -360,31 +372,40 @@ const leafletLayer = (options: any): any => {
       return map.off("click", this.inspector);
     }
 
-    public updateSource(name: string, options: any) {
-      if (!options.source) {
-        // Remove the view
-        this.views.delete(name);
-        // Remove the label rules
-        const prevLabelRules = this.label_rules.length;
-        this.label_rules = this.label_rules.filter(
-          (r: LabelRule) => r.dataSource !== name
-        );
-        if (prevLabelRules !== this.label_rules.length) this.clearLayout();
-      } else {
-        this.views.set(name, sourceToView(options.source));
-        if (options.paint_rules) {
-          this.paint_rules = this.paint_rules.filter(
-            (r: Rule) => r.dataSource !== name
-          );
-          this.paint_rules = this.paint_rules.concat(options.paint_rules);
-        }
+    public updateDataSources(
+      dataSources: DataSource[],
+      dataLabelsOnTop = false
+    ) {
+      const basemapLayerSourceName = "";
+      const dataLabelRules: LabelRule[] = [];
+      const dataSourcesMap = dataSources.reduce((agg, d) => {
+        agg[d.name] = d;
+        return agg;
+      }, {} as { [key: string]: DataSource });
 
-        if (options.label_rules) {
-          this.label_rules = this.label_rules.filter(
-            (r: LabelRule) => r.dataSource !== name
+      this.paint_rules = this.paint_rules.filter(
+        (r: Rule) => !r.dataSource || r.dataSource === basemapLayerSourceName
+      );
+      this.label_rules = this.paint_rules.filter(
+        (r: LabelRule) =>
+          !r.dataSource || r.dataSource === basemapLayerSourceName
+      );
+      this.views.keys().forEach((k: string) => {
+        if (k === basemapLayerSourceName) return;
+        if (!dataSourcesMap[k]) this.views.delete(k);
+        else {
+          this.views.set(k, sourceToView(dataSourcesMap[k].options));
+          this.paint_rules = this.paint_rules.concat(
+            dataSourcesMap[k].paintRules
           );
-          this.label_rules = this.label_rules.concat(options.label_rules);
+          dataLabelRules.push(...dataSourcesMap[k].labelRules);
         }
+      });
+
+      if (dataLabelRules.length !== 0) {
+        this.label_rules = dataLabelsOnTop
+          ? dataLabelRules.concat(this.label_rules)
+          : this.label_rules.concat(dataLabelRules);
       }
     }
 
