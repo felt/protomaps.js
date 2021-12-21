@@ -272,7 +272,7 @@ const leafletLayer = (options) => {
                 return agg;
             }, {});
             this.paint_rules = this.paint_rules.filter((r) => !r.dataSource || r.dataSource === basemapLayerSourceName);
-            this.label_rules = this.paint_rules.filter((r) => !r.dataSource || r.dataSource === basemapLayerSourceName);
+            this.label_rules = this.label_rules.filter((r) => !r.dataSource || r.dataSource === basemapLayerSourceName);
             this.views.forEach((_, k) => {
                 if (k === basemapLayerSourceName)
                     return;

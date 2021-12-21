@@ -5053,7 +5053,7 @@ var protomaps = (() => {
           return agg;
         }, {});
         this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
-        this.label_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
+        this.label_rules = this.label_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
         this.views.forEach((_2, k) => {
           if (k === basemapLayerSourceName)
             return;
