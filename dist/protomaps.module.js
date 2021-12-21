@@ -4980,7 +4980,7 @@ var leafletLayer = (options) => {
       }, {});
       this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
       this.label_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
-      this.views.keys().forEach((k) => {
+      this.views.forEach((_2, k) => {
         if (k === basemapLayerSourceName)
           return;
         if (!dataSourcesMap[k])

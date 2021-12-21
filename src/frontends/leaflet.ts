@@ -3,7 +3,7 @@ declare var L: any;
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 
-import { PreparedTile, sourcesToViews, sourceToView } from "../view";
+import { PreparedTile, sourcesToViews, sourceToView, View } from "../view";
 import { painter, Rule } from "../painter";
 import { Labelers, LabelRule } from "../labeler";
 import { light } from "../default_style/light";
@@ -390,7 +390,7 @@ const leafletLayer = (options: any): any => {
         (r: LabelRule) =>
           !r.dataSource || r.dataSource === basemapLayerSourceName
       );
-      this.views.keys().forEach((k: string) => {
+      this.views.forEach((_: View, k: string) => {
         if (k === basemapLayerSourceName) return;
         if (!dataSourcesMap[k]) this.views.delete(k);
         else {
