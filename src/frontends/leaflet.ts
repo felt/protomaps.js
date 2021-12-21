@@ -378,10 +378,6 @@ const leafletLayer = (options: any): any => {
     ) {
       const basemapLayerSourceName = "";
       const dataLabelRules: LabelRule[] = [];
-      const dataSourcesMap = dataSources.reduce((agg, d) => {
-        agg[d.name] = d;
-        return agg;
-      }, {} as { [key: string]: DataSource });
 
       this.paint_rules = this.paint_rules.filter(
         (r: Rule) => !r.dataSource || r.dataSource === basemapLayerSourceName
@@ -390,16 +386,20 @@ const leafletLayer = (options: any): any => {
         (r: LabelRule) =>
           !r.dataSource || r.dataSource === basemapLayerSourceName
       );
+      // As we want to keep the order set by dataSources, we first remove
+      // all non-basemap views and recreate with dataSources
       this.views.forEach((_: View, k: string) => {
         if (k === basemapLayerSourceName) return;
-        if (!dataSourcesMap[k]) this.views.delete(k);
-        else {
-          this.views.set(k, sourceToView(dataSourcesMap[k].options));
-          this.paint_rules = this.paint_rules.concat(
-            dataSourcesMap[k].paintRules
+        this.views.delete(k);
+      });
+      dataSources.forEach((d) => {
+        if (d.name === basemapLayerSourceName)
+          console.warn(
+            "Overwritting the basemap using updateDataSources will result in duplicated rules"
           );
-          dataLabelRules.push(...dataSourcesMap[k].labelRules);
-        }
+        this.views.set(d.name, sourceToView(d.options));
+        this.paint_rules = this.paint_rules.concat(d.paintRules);
+        dataLabelRules.push(...d.labelRules);
       });
 
       if (dataLabelRules.length !== 0) {

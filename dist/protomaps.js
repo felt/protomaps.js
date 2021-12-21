@@ -5048,22 +5048,19 @@ var protomaps = (() => {
       updateDataSources(dataSources, dataLabelsOnTop = false) {
         const basemapLayerSourceName = "";
         const dataLabelRules = [];
-        const dataSourcesMap = dataSources.reduce((agg, d) => {
-          agg[d.name] = d;
-          return agg;
-        }, {});
         this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
         this.label_rules = this.label_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
         this.views.forEach((_2, k) => {
           if (k === basemapLayerSourceName)
             return;
-          if (!dataSourcesMap[k])
-            this.views.delete(k);
-          else {
-            this.views.set(k, sourceToView(dataSourcesMap[k].options));
-            this.paint_rules = this.paint_rules.concat(dataSourcesMap[k].paintRules);
-            dataLabelRules.push(...dataSourcesMap[k].labelRules);
-          }
+          this.views.delete(k);
+        });
+        dataSources.forEach((d) => {
+          if (d.name === basemapLayerSourceName)
+            console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
+          this.views.set(d.name, sourceToView(d.options));
+          this.paint_rules = this.paint_rules.concat(d.paintRules);
+          dataLabelRules.push(...d.labelRules);
         });
         if (dataLabelRules.length !== 0) {
           this.label_rules = dataLabelsOnTop ? dataLabelRules.concat(this.label_rules) : this.label_rules.concat(dataLabelRules);
