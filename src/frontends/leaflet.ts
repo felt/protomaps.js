@@ -38,12 +38,12 @@ const reflect = (promise: Promise<Status>) => {
   );
 };
 
-type DataSourceOptions = {
+export type DataSourceOptions = {
   url: string;
   maxDataZoom?: number;
   levelDiff?: number;
 };
-type DataSource = {
+export type DataSource = {
   name: string;
   options: DataSourceOptions;
   paintRules: Rule[];
