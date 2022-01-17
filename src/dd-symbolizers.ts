@@ -95,13 +95,14 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
       );
       const justify = this.computeJustify(justifyValue, placement);
       const origin = new Point(xAxisOffset, yAxisOffset);
-      return this.placeLabelInPoint(
+      const validPlace = this.placeLabelInPoint(
         anchor,
         origin,
         layout,
         firstLabel,
         justify
       );
+      if (validPlace) return validPlace;
     }
 
     return undefined;

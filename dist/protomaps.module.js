@@ -5438,7 +5438,9 @@ var DataDrivenOffsetSymbolizer = class {
       const yAxisOffset = this.computeYAxisOffset(offsetYValue, firstLabelBbox, placement);
       const justify = this.computeJustify(justifyValue, placement);
       const origin = new import_point_geometry8.default(xAxisOffset, yAxisOffset);
-      return this.placeLabelInPoint(anchor, origin, layout, firstLabel, justify);
+      const validPlace = this.placeLabelInPoint(anchor, origin, layout, firstLabel, justify);
+      if (validPlace)
+        return validPlace;
     }
     return void 0;
   }
