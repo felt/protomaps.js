@@ -6,9 +6,6 @@ import { VectorTile } from "@mapbox/vector-tile";
 import Protobuf from "pbf";
 // @ts-ignore
 import { PMTiles } from "pmtiles";
-import { MAX_VERTICES_PER_DRAW_CALL } from "./symbolizer";
-
-import { splitMultiLineString, splitMultiPolygon } from "./workaround";
 
 export enum GeomType {
   Point = 1,
@@ -107,35 +104,14 @@ function parseTile(
       for (let part of result.geom) numVertices += part.length;
 
       let split: Point[][] = [];
-      if (
-        numVertices > MAX_VERTICES_PER_DRAW_CALL &&
-        layer.feature(i).type != GeomType.Point
-      ) {
-        if (layer.feature(i).type == GeomType.Line) {
-          split = splitMultiLineString(result.geom, MAX_VERTICES_PER_DRAW_CALL);
-        } else {
-          split = splitMultiPolygon(result.geom, MAX_VERTICES_PER_DRAW_CALL);
-        }
-        for (let part of split) {
-          features.push({
-            id: layer.feature(i).id,
-            geomType: layer.feature(i).type,
-            geom: part,
-            numVertices: numVertices,
-            bbox: result.bbox,
-            props: layer.feature(i).properties,
-          });
-        }
-      } else {
-        features.push({
-          id: layer.feature(i).id,
-          geomType: layer.feature(i).type,
-          geom: result.geom,
-          numVertices: numVertices,
-          bbox: result.bbox,
-          props: layer.feature(i).properties,
-        });
-      }
+      features.push({
+        id: layer.feature(i).id,
+        geomType: layer.feature(i).type,
+        geom: result.geom,
+        numVertices: numVertices,
+        bbox: result.bbox,
+        props: layer.feature(i).properties,
+      });
     }
     result.set(key, features);
   }

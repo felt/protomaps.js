@@ -362,12 +362,12 @@ var protomaps = (() => {
           return [rings];
         var polygons = [], polygon, ccw;
         for (var i2 = 0; i2 < len; i2++) {
-          var area2 = signedArea(rings[i2]);
-          if (area2 === 0)
+          var area = signedArea(rings[i2]);
+          if (area === 0)
             continue;
           if (ccw === void 0)
-            ccw = area2 < 0;
-          if (ccw === area2 < 0) {
+            ccw = area < 0;
+          if (ccw === area < 0) {
             if (polygon)
               polygons.push(polygon);
             polygon = [rings[i2]];
@@ -1218,14 +1218,14 @@ var protomaps = (() => {
         typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory() : typeof define === "function" && define.amd ? define(factory) : (global = global || self, global.TinyQueue = factory());
       })(exports, function() {
         "use strict";
-        var TinyQueue = function TinyQueue2(data, compare2) {
+        var TinyQueue = function TinyQueue2(data, compare) {
           if (data === void 0)
             data = [];
-          if (compare2 === void 0)
-            compare2 = defaultCompare;
+          if (compare === void 0)
+            compare = defaultCompare;
           this.data = data;
           this.length = this.data.length;
-          this.compare = compare2;
+          this.compare = compare;
           if (this.length > 0) {
             for (var i2 = (this.length >> 1) - 1; i2 >= 0; i2--) {
               this._down(i2);
@@ -1256,12 +1256,12 @@ var protomaps = (() => {
         TinyQueue.prototype._up = function _up(pos) {
           var ref = this;
           var data = ref.data;
-          var compare2 = ref.compare;
+          var compare = ref.compare;
           var item = data[pos];
           while (pos > 0) {
             var parent = pos - 1 >> 1;
             var current = data[parent];
-            if (compare2(item, current) >= 0) {
+            if (compare(item, current) >= 0) {
               break;
             }
             data[pos] = current;
@@ -1272,18 +1272,18 @@ var protomaps = (() => {
         TinyQueue.prototype._down = function _down(pos) {
           var ref = this;
           var data = ref.data;
-          var compare2 = ref.compare;
+          var compare = ref.compare;
           var halfLength = this.length >> 1;
           var item = data[pos];
           while (pos < halfLength) {
             var left = (pos << 1) + 1;
             var best = data[left];
             var right = left + 1;
-            if (right < this.length && compare2(data[right], best) < 0) {
+            if (right < this.length && compare(data[right], best) < 0) {
               left = right;
               best = data[right];
             }
-            if (compare2(best, item) >= 0) {
+            if (compare(best, item) >= 0) {
               break;
             }
             data[pos] = best;
@@ -1392,7 +1392,7 @@ var protomaps = (() => {
         return minDistSq === 0 ? 0 : (inside ? 1 : -1) * Math.sqrt(minDistSq);
       }
       function getCentroidCell(polygon) {
-        var area2 = 0;
+        var area = 0;
         var x = 0;
         var y = 0;
         var points = polygon[0];
@@ -1402,11 +1402,11 @@ var protomaps = (() => {
           var f2 = a2[0] * b[1] - b[0] * a2[1];
           x += (a2[0] + b[0]) * f2;
           y += (a2[1] + b[1]) * f2;
-          area2 += f2 * 3;
+          area += f2 * 3;
         }
-        if (area2 === 0)
+        if (area === 0)
           return new Cell(points[0][0], points[0][1], 0, polygon);
-        return new Cell(x / area2, y / area2, 0, polygon);
+        return new Cell(x / area, y / area, 0, polygon);
       }
       function getSegDistSq(px, py, a2, b) {
         var x = a2[0];
@@ -1738,7 +1738,7 @@ var protomaps = (() => {
   var import_point_geometry7 = __toModule(require_point_geometry());
 
   // src/view.ts
-  var import_point_geometry4 = __toModule(require_point_geometry());
+  var import_point_geometry2 = __toModule(require_point_geometry());
 
   // src/events.ts
   var ProtomapsEvent;
@@ -1750,7 +1750,7 @@ var protomaps = (() => {
   })(ProtomapsEvent || (ProtomapsEvent = {}));
 
   // src/tilecache.ts
-  var import_point_geometry3 = __toModule(require_point_geometry());
+  var import_point_geometry = __toModule(require_point_geometry());
   var import_vector_tile = __toModule(require_vector_tile());
   var import_pbf = __toModule(require_pbf());
 
@@ -1932,8 +1932,518 @@ var protomaps = (() => {
     }
   };
 
+  // src/tilecache.ts
+  var GeomType;
+  (function(GeomType2) {
+    GeomType2[GeomType2["Point"] = 1] = "Point";
+    GeomType2[GeomType2["Line"] = 2] = "Line";
+    GeomType2[GeomType2["Polygon"] = 3] = "Polygon";
+  })(GeomType || (GeomType = {}));
+  function toIndex(c2) {
+    return c2.x + ":" + c2.y + ":" + c2.z;
+  }
+  var loadGeomAndBbox = (pbf, geometry, scale) => {
+    pbf.pos = geometry;
+    var end = pbf.readVarint() + pbf.pos, cmd = 1, length = 0, x = 0, y = 0, x1 = Infinity, x2 = -Infinity, y1 = Infinity, y2 = -Infinity;
+    var lines = [];
+    var line;
+    while (pbf.pos < end) {
+      if (length <= 0) {
+        var cmdLen = pbf.readVarint();
+        cmd = cmdLen & 7;
+        length = cmdLen >> 3;
+      }
+      length--;
+      if (cmd === 1 || cmd === 2) {
+        x += pbf.readSVarint() * scale;
+        y += pbf.readSVarint() * scale;
+        if (x < x1)
+          x1 = x;
+        if (x > x2)
+          x2 = x;
+        if (y < y1)
+          y1 = y;
+        if (y > y2)
+          y2 = y;
+        if (cmd === 1) {
+          if (line)
+            lines.push(line);
+          line = [];
+        }
+        line.push(new import_point_geometry.default(x, y));
+      } else if (cmd === 7) {
+        if (line)
+          line.push(line[0].clone());
+      } else
+        throw new Error("unknown command " + cmd);
+    }
+    if (line)
+      lines.push(line);
+    return { geom: lines, bbox: { minX: x1, minY: y1, maxX: x2, maxY: y2 } };
+  };
+  function parseTile(buffer, tileSize) {
+    let v = new import_vector_tile.VectorTile(new import_pbf.default(buffer));
+    let result = new Map();
+    for (let [key, value] of Object.entries(v.layers)) {
+      let features = [];
+      let layer = value;
+      for (let i2 = 0; i2 < layer.length; i2++) {
+        let result2 = loadGeomAndBbox(layer.feature(i2)._pbf, layer.feature(i2)._geometry, tileSize / layer.extent);
+        let numVertices = 0;
+        for (let part of result2.geom)
+          numVertices += part.length;
+        let split = [];
+        features.push({
+          id: layer.feature(i2).id,
+          geomType: layer.feature(i2).type,
+          geom: result2.geom,
+          numVertices,
+          bbox: result2.bbox,
+          props: layer.feature(i2).properties
+        });
+      }
+      result.set(key, features);
+    }
+    return result;
+  }
+  var PmtilesSource = class {
+    constructor(url, shouldCancelZooms) {
+      if (url.url) {
+        this.p = url;
+      } else {
+        this.p = new PMTiles(url);
+      }
+      this.controllers = [];
+      this.shouldCancelZooms = shouldCancelZooms;
+    }
+    get(c2, tileSize) {
+      return __async(this, null, function* () {
+        if (this.shouldCancelZooms) {
+          this.controllers = this.controllers.filter((cont) => {
+            if (cont[0] != c2.z) {
+              cont[1].abort();
+              return false;
+            }
+            return true;
+          });
+        }
+        let result = yield this.p.getZxy(c2.z, c2.x, c2.y);
+        if (!result)
+          throw new Error(`Tile ${c2.z} ${c2.x} ${c2.y} not found in archive`);
+        const controller = new AbortController();
+        this.controllers.push([c2.z, controller]);
+        const signal = controller.signal;
+        return new Promise((resolve, reject) => {
+          fetch(this.p.url, {
+            headers: {
+              Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1)
+            },
+            signal
+          }).then((resp) => {
+            return resp.arrayBuffer();
+          }).then((buffer) => {
+            let result2 = parseTile(buffer, tileSize);
+            resolve(result2);
+          }).catch((e2) => {
+            reject(e2);
+          });
+        });
+      });
+    }
+  };
+  var ZxySource = class {
+    constructor(url, shouldCancelZooms) {
+      this.url = url;
+      this.controllers = [];
+      this.shouldCancelZooms = shouldCancelZooms;
+    }
+    get(c2, tileSize) {
+      return __async(this, null, function* () {
+        if (this.shouldCancelZooms) {
+          this.controllers = this.controllers.filter((cont) => {
+            if (cont[0] != c2.z) {
+              cont[1].abort();
+              return false;
+            }
+            return true;
+          });
+        }
+        let url = this.url.replace("{z}", c2.z.toString()).replace("{x}", c2.x.toString()).replace("{y}", c2.y.toString());
+        const controller = new AbortController();
+        this.controllers.push([c2.z, controller]);
+        const signal = controller.signal;
+        return new Promise((resolve, reject) => {
+          fetch(url, { signal }).then((resp) => {
+            return resp.arrayBuffer();
+          }).then((buffer) => {
+            let result = parseTile(buffer, tileSize);
+            resolve(result);
+          }).catch((e2) => {
+            reject(e2);
+          });
+        });
+      });
+    }
+  };
+  var R = 6378137;
+  var MAX_LATITUDE = 85.0511287798;
+  var MAXCOORD = R * Math.PI;
+  var project = (latlng) => {
+    let d = Math.PI / 180;
+    let constrained_lat = Math.max(Math.min(MAX_LATITUDE, latlng[0]), -MAX_LATITUDE);
+    let sin = Math.sin(constrained_lat * d);
+    return new import_point_geometry.default(R * latlng[1] * d, R * Math.log((1 + sin) / (1 - sin)) / 2);
+  };
+  function sqr(x) {
+    return x * x;
+  }
+  function dist2(v, w) {
+    return sqr(v.x - w.x) + sqr(v.y - w.y);
+  }
+  function distToSegmentSquared(p2, v, w) {
+    var l2 = dist2(v, w);
+    if (l2 === 0)
+      return dist2(p2, v);
+    var t2 = ((p2.x - v.x) * (w.x - v.x) + (p2.y - v.y) * (w.y - v.y)) / l2;
+    t2 = Math.max(0, Math.min(1, t2));
+    return dist2(p2, { x: v.x + t2 * (w.x - v.x), y: v.y + t2 * (w.y - v.y) });
+  }
+  function isInRing(point, ring) {
+    var inside = false;
+    for (var i2 = 0, j = ring.length - 1; i2 < ring.length; j = i2++) {
+      var xi = ring[i2].x, yi = ring[i2].y;
+      var xj = ring[j].x, yj = ring[j].y;
+      var intersect = yi > point.y != yj > point.y && point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi;
+      if (intersect)
+        inside = !inside;
+    }
+    return inside;
+  }
+  function isCCW(ring) {
+    var area = 0;
+    for (var i2 = 0; i2 < ring.length; i2++) {
+      let j = (i2 + 1) % ring.length;
+      area += ring[i2].x * ring[j].y;
+      area -= ring[j].x * ring[i2].y;
+    }
+    return area < 0;
+  }
+  function pointInPolygon(point, geom) {
+    var isInCurrentExterior = false;
+    for (let ring of geom) {
+      if (isCCW(ring)) {
+        if (isInRing(point, ring))
+          isInCurrentExterior = false;
+      } else {
+        if (isInCurrentExterior)
+          return true;
+        if (isInRing(point, ring))
+          isInCurrentExterior = true;
+      }
+    }
+    return isInCurrentExterior;
+  }
+  function pointMinDistToPoints(point, geom) {
+    let min = Infinity;
+    for (let l2 of geom) {
+      let dist = Math.sqrt(dist2(point, l2[0]));
+      if (dist < min)
+        min = dist;
+    }
+    return min;
+  }
+  function pointMinDistToLines(point, geom) {
+    let min = Infinity;
+    for (let l2 of geom) {
+      for (var i2 = 0; i2 < l2.length - 1; i2++) {
+        let dist = Math.sqrt(distToSegmentSquared(point, l2[i2], l2[i2 + 1]));
+        if (dist < min)
+          min = dist;
+      }
+    }
+    return min;
+  }
+  var TileCache = class {
+    constructor(source, tileSize) {
+      this.source = source;
+      this.cache = new Map();
+      this.inflight = new Map();
+      this.tileSize = tileSize;
+    }
+    queryFeatures(lng, lat, zoom, brushSize) {
+      let projected = project([lat, lng]);
+      var normalized = new import_point_geometry.default((projected.x + MAXCOORD) / (MAXCOORD * 2), 1 - (projected.y + MAXCOORD) / (MAXCOORD * 2));
+      if (normalized.x > 1)
+        normalized.x = normalized.x - Math.floor(normalized.x);
+      let on_zoom = normalized.mult(1 << zoom);
+      let tile_x = Math.floor(on_zoom.x);
+      let tile_y = Math.floor(on_zoom.y);
+      const idx = toIndex({ z: zoom, x: tile_x, y: tile_y });
+      let retval = [];
+      let entry = this.cache.get(idx);
+      if (entry) {
+        const center = {
+          x: (on_zoom.x - tile_x) * this.tileSize,
+          y: (on_zoom.y - tile_y) * this.tileSize
+        };
+        for (let [layer_name, layer_arr] of entry.data.entries()) {
+          for (let feature of layer_arr) {
+            if (feature.geomType == 1) {
+              if (pointMinDistToPoints(center, feature.geom) < brushSize) {
+                retval.push({ feature, layerName: layer_name });
+              }
+            } else if (feature.geomType == 2) {
+              if (pointMinDistToLines(center, feature.geom) < brushSize) {
+                retval.push({ feature, layerName: layer_name });
+              }
+            } else {
+              if (pointInPolygon(center, feature.geom)) {
+                retval.push({ feature, layerName: layer_name });
+              }
+            }
+          }
+        }
+      }
+      return retval;
+    }
+    get(c2) {
+      return __async(this, null, function* () {
+        const idx = toIndex(c2);
+        return new Promise((resolve, reject) => {
+          let entry = this.cache.get(idx);
+          if (entry) {
+            entry.used = performance.now();
+            resolve(entry.data);
+          } else {
+            let ifentry = this.inflight.get(idx);
+            if (ifentry) {
+              ifentry.push([resolve, reject]);
+            } else {
+              this.inflight.set(idx, []);
+              this.source.get(c2, this.tileSize).then((tile) => {
+                this.cache.set(idx, { used: performance.now(), data: tile });
+                let ifentry2 = this.inflight.get(idx);
+                if (ifentry2)
+                  ifentry2.forEach((f2) => f2[0](tile));
+                this.inflight.delete(idx);
+                resolve(tile);
+                if (this.cache.size >= 64) {
+                  let min_used = Infinity;
+                  let min_key = void 0;
+                  this.cache.forEach((value, key) => {
+                    if (value.used < min_used) {
+                      min_used = value.used;
+                      min_key = key;
+                    }
+                  });
+                  if (min_key)
+                    this.cache.delete(min_key);
+                }
+              }).catch((e2) => {
+                let ifentry2 = this.inflight.get(idx);
+                if (ifentry2)
+                  ifentry2.forEach((f2) => f2[1](e2));
+                this.inflight.delete(idx);
+                reject(e2);
+              });
+            }
+          }
+        });
+      });
+    }
+  };
+
+  // src/view.ts
+  var transformGeom = (geom, scale, translate) => {
+    let retval = [];
+    for (let arr2 of geom) {
+      let loop = [];
+      for (let coord of arr2) {
+        loop.push(coord.clone().mult(scale).add(translate));
+      }
+      retval.push(loop);
+    }
+    return retval;
+  };
+  var wrap = (val, z2) => {
+    let dim = 1 << z2;
+    if (val < 0)
+      val = dim + val;
+    if (val >= dim)
+      val = val % dim;
+    return val;
+  };
+  var View = class {
+    constructor(tileCache, maxDataLevel, levelDiff, eventQueue) {
+      this.tileCache = tileCache;
+      this.maxDataLevel = maxDataLevel;
+      this.levelDiff = levelDiff;
+      this.eventQueue = eventQueue;
+    }
+    dataTilesForBounds(display_zoom, bounds) {
+      let fractional = Math.pow(2, display_zoom) / Math.pow(2, Math.ceil(display_zoom));
+      let needed = [];
+      var scale = 1;
+      var dim = this.tileCache.tileSize;
+      if (display_zoom < this.levelDiff) {
+        scale = 1 / (1 << this.levelDiff - display_zoom) * fractional;
+        needed.push({
+          data_tile: { z: 0, x: 0, y: 0 },
+          origin: new import_point_geometry2.default(0, 0),
+          scale,
+          dim: dim * scale
+        });
+      } else if (display_zoom <= this.levelDiff + this.maxDataLevel) {
+        let f2 = 1 << this.levelDiff;
+        let basetile_size = 256 * fractional;
+        let data_zoom = Math.ceil(display_zoom) - this.levelDiff;
+        let mintile_x = Math.floor(bounds.minX / f2 / basetile_size);
+        let mintile_y = Math.floor(bounds.minY / f2 / basetile_size);
+        let maxtile_x = Math.floor(bounds.maxX / f2 / basetile_size);
+        let maxtile_y = Math.floor(bounds.maxY / f2 / basetile_size);
+        for (var tx = mintile_x; tx <= maxtile_x; tx++) {
+          for (var ty = mintile_y; ty <= maxtile_y; ty++) {
+            let origin = new import_point_geometry2.default(tx * f2 * basetile_size, ty * f2 * basetile_size);
+            needed.push({
+              data_tile: {
+                z: data_zoom,
+                x: wrap(tx, data_zoom),
+                y: wrap(ty, data_zoom)
+              },
+              origin,
+              scale: fractional,
+              dim: dim * fractional
+            });
+          }
+        }
+      } else {
+        let f2 = 1 << this.levelDiff;
+        scale = (1 << Math.ceil(display_zoom) - this.maxDataLevel - this.levelDiff) * fractional;
+        let mintile_x = Math.floor(bounds.minX / f2 / 256 / scale);
+        let mintile_y = Math.floor(bounds.minY / f2 / 256 / scale);
+        let maxtile_x = Math.floor(bounds.maxX / f2 / 256 / scale);
+        let maxtile_y = Math.floor(bounds.maxY / f2 / 256 / scale);
+        for (var tx = mintile_x; tx <= maxtile_x; tx++) {
+          for (var ty = mintile_y; ty <= maxtile_y; ty++) {
+            let origin = new import_point_geometry2.default(tx * f2 * 256 * scale, ty * f2 * 256 * scale);
+            needed.push({
+              data_tile: {
+                z: this.maxDataLevel,
+                x: wrap(tx, this.maxDataLevel),
+                y: wrap(ty, this.maxDataLevel)
+              },
+              origin,
+              scale,
+              dim: dim * scale
+            });
+          }
+        }
+      }
+      return needed;
+    }
+    dataTileForDisplayTile(display_tile) {
+      var data_tile;
+      var scale = 1;
+      var dim = this.tileCache.tileSize;
+      var origin;
+      if (display_tile.z < this.levelDiff) {
+        data_tile = { z: 0, x: 0, y: 0 };
+        scale = 1 / (1 << this.levelDiff - display_tile.z);
+        origin = new import_point_geometry2.default(0, 0);
+        dim = dim * scale;
+      } else if (display_tile.z <= this.levelDiff + this.maxDataLevel) {
+        let f2 = 1 << this.levelDiff;
+        data_tile = {
+          z: display_tile.z - this.levelDiff,
+          x: Math.floor(display_tile.x / f2),
+          y: Math.floor(display_tile.y / f2)
+        };
+        origin = new import_point_geometry2.default(data_tile.x * f2 * 256, data_tile.y * f2 * 256);
+      } else {
+        scale = 1 << display_tile.z - this.maxDataLevel - this.levelDiff;
+        let f2 = 1 << this.levelDiff;
+        data_tile = {
+          z: this.maxDataLevel,
+          x: Math.floor(display_tile.x / f2 / scale),
+          y: Math.floor(display_tile.y / f2 / scale)
+        };
+        origin = new import_point_geometry2.default(data_tile.x * f2 * scale * 256, data_tile.y * f2 * scale * 256);
+        dim = dim * scale;
+      }
+      return { data_tile, scale, origin, dim };
+    }
+    getBbox(display_zoom, bounds) {
+      return __async(this, null, function* () {
+        var _a, _b;
+        (_a = this.eventQueue) == null ? void 0 : _a.publish(ProtomapsEvent.TileFetchStart);
+        let needed = this.dataTilesForBounds(display_zoom, bounds);
+        let result = yield Promise.all(needed.map((tt) => this.tileCache.get(tt.data_tile)));
+        (_b = this.eventQueue) == null ? void 0 : _b.publish(ProtomapsEvent.TileFetchEnd);
+        return result.map((data, i2) => {
+          let tt = needed[i2];
+          return {
+            data,
+            z: display_zoom,
+            data_tile: tt.data_tile,
+            scale: tt.scale,
+            dim: tt.dim,
+            origin: tt.origin
+          };
+        });
+      });
+    }
+    getDisplayTile(display_tile) {
+      return __async(this, null, function* () {
+        let tt = this.dataTileForDisplayTile(display_tile);
+        const data = yield this.tileCache.get(tt.data_tile);
+        return {
+          data,
+          z: display_tile.z,
+          data_tile: tt.data_tile,
+          scale: tt.scale,
+          origin: tt.origin,
+          dim: tt.dim
+        };
+      });
+    }
+    queryFeatures(lng, lat, display_zoom) {
+      let rounded_zoom = Math.round(display_zoom);
+      let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
+      let brush_size = 16 / (1 << rounded_zoom - data_zoom);
+      return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
+    }
+  };
+  var sourceToView = (o2) => {
+    const level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
+    const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
+    let source;
+    if (o2.url.url) {
+      source = new PmtilesSource(o2.url, true);
+    } else if (o2.url.endsWith(".pmtiles")) {
+      source = new PmtilesSource(o2.url, true);
+    } else {
+      source = new ZxySource(o2.url, true);
+    }
+    const cache = new TileCache(source, 256 * 1 << level_diff);
+    return new View(cache, maxDataZoom, level_diff);
+  };
+  var sourcesToViews = (options) => {
+    const sources = new Map();
+    if (options.sources) {
+      for (const [key, value] of Object.entries(options.sources)) {
+        sources.set(key, sourceToView(value));
+      }
+    } else {
+      sources.set("", sourceToView(options));
+    }
+    return sources;
+  };
+
+  // src/painter.ts
+  var import_point_geometry5 = __toModule(require_point_geometry());
+
   // src/symbolizer.ts
-  var import_point_geometry2 = __toModule(require_point_geometry());
+  var import_point_geometry4 = __toModule(require_point_geometry());
   var import_unitbezier = __toModule(require_unitbezier_d());
   var import_polylabel = __toModule(require_polylabel());
 
@@ -2098,7 +2608,7 @@ var protomaps = (() => {
   var cjk_test = new RegExp("^[" + CJK_CHARS + "]+$");
 
   // src/line.ts
-  var import_point_geometry = __toModule(require_point_geometry());
+  var import_point_geometry3 = __toModule(require_point_geometry());
   var linelabel = (pts, max_angle_delta, targetLen) => {
     var chunks = [];
     var a2, b, c2, i2 = 0, n2 = 0, d = 0;
@@ -2168,9 +2678,9 @@ var protomaps = (() => {
       let segments = linelabel(ls, Math.PI / 45, minimum);
       for (let segment of segments) {
         if (segment.length >= minimum + cellSize) {
-          let start = new import_point_geometry.default(ls[segment.beginIndex].x, ls[segment.beginIndex].y);
+          let start = new import_point_geometry3.default(ls[segment.beginIndex].x, ls[segment.beginIndex].y);
           let end = ls[segment.endIndex - 1];
-          let normalized = new import_point_geometry.default((end.x - start.x) / segment.length, (end.y - start.y) / segment.length);
+          let normalized = new import_point_geometry3.default((end.x - start.x) / segment.length, (end.y - start.y) / segment.length);
           for (var i2 = cellSize; i2 < segment.length - minimum; i2 += repeatDistance) {
             candidates.push({
               start: start.add(normalized.mult(i2)),
@@ -2519,7 +3029,7 @@ var protomaps = (() => {
     }
     place(layout, geom, feature) {
       let pt = geom[0];
-      let a2 = new import_point_geometry2.default(geom[0][0].x, geom[0][0].y);
+      let a2 = new import_point_geometry4.default(geom[0][0].x, geom[0][0].y);
       let bbox = {
         minX: a2.x - 32,
         minY: a2.y - 32,
@@ -2559,7 +3069,7 @@ var protomaps = (() => {
     }
     place(layout, geom, feature) {
       let pt = geom[0];
-      let a2 = new import_point_geometry2.default(geom[0][0].x, geom[0][0].y);
+      let a2 = new import_point_geometry4.default(geom[0][0].x, geom[0][0].y);
       let radius = this.radius.get(layout.zoom, feature);
       let bbox = {
         minX: a2.x - radius,
@@ -2568,7 +3078,7 @@ var protomaps = (() => {
         maxY: a2.y + radius
       };
       let draw = (ctx) => {
-        this.draw(ctx, [[new import_point_geometry2.default(0, 0)]], layout.zoom, feature);
+        this.draw(ctx, [[new import_point_geometry4.default(0, 0)]], layout.zoom, feature);
       };
       return [{ anchor: a2, bboxes: [bbox], draw }];
     }
@@ -2592,7 +3102,7 @@ var protomaps = (() => {
       let ascent = metrics.actualBoundingBoxAscent;
       let descent = metrics.actualBoundingBoxDescent;
       let pt = geom[0];
-      let a2 = new import_point_geometry2.default(geom[0][0].x, geom[0][0].y);
+      let a2 = new import_point_geometry4.default(geom[0][0].x, geom[0][0].y);
       let p2 = this.padding.get(layout.zoom, f2);
       let bbox = {
         minX: a2.x - width / 2 - p2,
@@ -2687,7 +3197,7 @@ var protomaps = (() => {
     }
     place(layout, geom, feature) {
       let a2 = geom[0][0];
-      let placed = this.symbolizer.place(layout, [[new import_point_geometry2.default(0, 0)]], feature);
+      let placed = this.symbolizer.place(layout, [[new import_point_geometry4.default(0, 0)]], feature);
       if (!placed || placed.length == 0)
         return void 0;
       let first_label = placed[0];
@@ -2761,7 +3271,7 @@ var protomaps = (() => {
       let ascent = metrics.actualBoundingBoxAscent;
       let descent = metrics.actualBoundingBoxDescent;
       let lineHeight = (ascent + descent) * this.lineHeight.get(layout.zoom, feature);
-      let a2 = new import_point_geometry2.default(geom[0][0].x, geom[0][0].y);
+      let a2 = new import_point_geometry4.default(geom[0][0].x, geom[0][0].y);
       let bbox = {
         minX: a2.x,
         minY: a2.y - ascent,
@@ -2826,7 +3336,7 @@ var protomaps = (() => {
       if (feature.geomType !== GeomType.Point)
         return void 0;
       let anchor = geom[0][0];
-      let placed = this.symbolizer.place(layout, [[new import_point_geometry2.default(0, 0)]], feature);
+      let placed = this.symbolizer.place(layout, [[new import_point_geometry4.default(0, 0)]], feature);
       if (!placed || placed.length == 0)
         return void 0;
       let first_label = placed[0];
@@ -2840,7 +3350,7 @@ var protomaps = (() => {
           maxY: a2.y + o2.y + fb.maxY
         };
       };
-      var origin = new import_point_geometry2.default(offset, -offset);
+      var origin = new import_point_geometry4.default(offset, -offset);
       var justify;
       let draw = (ctx) => {
         ctx.translate(origin.x, origin.y);
@@ -2850,17 +3360,17 @@ var protomaps = (() => {
       justify = 1;
       if (!layout.index.bboxCollides(bbox, layout.order))
         return [{ anchor, bboxes: [bbox], draw }];
-      origin = new import_point_geometry2.default(-offset - fb.maxX, offset - fb.minY);
+      origin = new import_point_geometry4.default(-offset - fb.maxX, offset - fb.minY);
       bbox = getBbox(anchor, origin);
       justify = 3;
       if (!layout.index.bboxCollides(bbox, layout.order))
         return [{ anchor, bboxes: [bbox], draw }];
-      origin = new import_point_geometry2.default(-offset - fb.maxX, -offset);
+      origin = new import_point_geometry4.default(-offset - fb.maxX, -offset);
       bbox = getBbox(anchor, origin);
       justify = 3;
       if (!layout.index.bboxCollides(bbox, layout.order))
         return [{ anchor, bboxes: [bbox], draw }];
-      origin = new import_point_geometry2.default(-offset - fb.maxX, offset - fb.minY);
+      origin = new import_point_geometry4.default(-offset - fb.maxX, offset - fb.minY);
       bbox = getBbox(anchor, origin);
       justify = 1;
       if (!layout.index.bboxCollides(bbox, layout.order))
@@ -2971,17 +3481,17 @@ var protomaps = (() => {
     }
     place(layout, geom, feature) {
       let fbbox = feature.bbox;
-      let area2 = (fbbox.maxY - fbbox.minY) * (fbbox.maxX - fbbox.minX);
-      if (area2 < 2e4)
+      let area = (fbbox.maxY - fbbox.minY) * (fbbox.maxX - fbbox.minX);
+      if (area < 2e4)
         return void 0;
-      let placed = this.symbolizer.place(layout, [[new import_point_geometry2.default(0, 0)]], feature);
+      let placed = this.symbolizer.place(layout, [[new import_point_geometry4.default(0, 0)]], feature);
       if (!placed || placed.length == 0)
         return void 0;
       let first_label = placed[0];
       let fb = first_label.bboxes[0];
       let first_poly = geom[0];
       let found = (0, import_polylabel.default)([first_poly.map((c2) => [c2.x, c2.y])]);
-      let a2 = new import_point_geometry2.default(found[0], found[1]);
+      let a2 = new import_point_geometry4.default(found[0], found[1]);
       let bbox = {
         minX: a2.x - (fb.maxX - fb.minX) / 2,
         minY: a2.y - (fb.maxY - fb.minY) / 2,
@@ -2996,728 +3506,7 @@ var protomaps = (() => {
     }
   };
 
-  // src/workaround.ts
-  var compare = (a2, b) => {
-    return a2[1].area - b[1].area;
-  };
-  function minHeap() {
-    var heap = {}, array = [];
-    heap.push = function() {
-      for (var i2 = 0, n2 = arguments.length; i2 < n2; ++i2) {
-        var object = arguments[i2];
-        up(object.index = array.push(object) - 1);
-      }
-      return array.length;
-    };
-    heap.pop = function() {
-      var removed = array[0], object = array.pop();
-      if (array.length) {
-        array[object.index = 0] = object;
-        down(0);
-      }
-      return removed;
-    };
-    heap.remove = function(removed) {
-      var i2 = removed.index, object = array.pop();
-      if (i2 !== array.length) {
-        array[object.index = i2] = object;
-        (compare(object, removed) < 0 ? up : down)(i2);
-      }
-      return i2;
-    };
-    function up(i2) {
-      var object = array[i2];
-      while (i2 > 0) {
-        var up2 = (i2 + 1 >> 1) - 1, parent = array[up2];
-        if (compare(object, parent) >= 0)
-          break;
-        array[parent.index = i2] = parent;
-        array[object.index = i2 = up2] = object;
-      }
-    }
-    function down(i2) {
-      var object = array[i2];
-      while (true) {
-        var right = (i2 + 1) * 2, left = right - 1, down2 = i2, child = array[down2];
-        if (left < array.length && compare(array[left], child) < 0)
-          child = array[down2 = left];
-        if (right < array.length && compare(array[right], child) < 0)
-          child = array[down2 = right];
-        if (down2 === i2)
-          break;
-        array[child.index = i2] = child;
-        array[object.index = i2 = down2] = object;
-      }
-    }
-    return heap;
-  }
-  var area = (t2) => {
-    return Math.abs((t2[0].x - t2[2].x) * (t2[1].y - t2[0].y) - (t2[0].x - t2[1].x) * (t2[2].y - t2[0].y));
-  };
-  var simplify = (rings, pointsToKeep) => {
-    let globalWeights = [];
-    for (let ring of rings) {
-      let weights = simplifyRing(ring, pointsToKeep);
-      globalWeights = globalWeights.concat(weights);
-    }
-    if (pointsToKeep >= globalWeights.length) {
-      return rings;
-    }
-    globalWeights.sort(function(a2, b) {
-      return b - a2;
-    });
-    let result = [];
-    let threshold = globalWeights[pointsToKeep];
-    let cnt = 0;
-    for (let ring of rings) {
-      let resultRing = ring.filter(function(d) {
-        return d.area > threshold;
-      });
-      if (resultRing.length >= 3) {
-        result.push(resultRing);
-        cnt += resultRing.length;
-      }
-    }
-    return result;
-  };
-  var simplifyRing = (ring, pointsToKeep) => {
-    var maxArea = 0;
-    let heap = minHeap();
-    var triangle;
-    let triangles = [];
-    for (var i2 = 1, n2 = ring.length - 1; i2 < n2; ++i2) {
-      triangle = ring.slice(i2 - 1, i2 + 2);
-      if (triangle[1].area = area(triangle)) {
-        triangles.push(triangle);
-        heap.push(triangle);
-      }
-    }
-    for (var i2 = 0, n2 = triangles.length; i2 < n2; ++i2) {
-      triangle = triangles[i2];
-      triangle.previous = triangles[i2 - 1];
-      triangle.next = triangles[i2 + 1];
-    }
-    while (triangle = heap.pop()) {
-      if (triangle[1].area < maxArea)
-        triangle[1].area = maxArea;
-      else
-        maxArea = triangle[1].area;
-      if (triangle.previous) {
-        triangle.previous.next = triangle.next;
-        triangle.previous[2] = triangle[2];
-        update(triangle.previous);
-      } else {
-        triangle[0].area = triangle[1].area;
-      }
-      if (triangle.next) {
-        triangle.next.previous = triangle.previous;
-        triangle.next[0] = triangle[0];
-        update(triangle.next);
-      } else {
-        triangle[2].area = triangle[1].area;
-      }
-    }
-    function update(triangle2) {
-      heap.remove(triangle2);
-      triangle2[1].area = area(triangle2);
-      heap.push(triangle2);
-    }
-    var weights = ring.map(function(d) {
-      return d.area > 0 ? d.area : Infinity;
-    });
-    return weights;
-  };
-  var splitMultiLineString = (mls, maxVertices) => {
-    let retval = [];
-    var current = [];
-    let currentVertices = 0;
-    for (let ls of mls) {
-      var temp = ls;
-      if (ls.length > maxVertices) {
-        console.log("LineString with length: ", ls.length);
-        temp = simplify(ls, maxVertices);
-      }
-      if (current.length > 0 && currentVertices + temp.length > maxVertices) {
-        retval.push(current);
-        current = [];
-        currentVertices = 0;
-      }
-      current.push(temp);
-      currentVertices += ls.length;
-    }
-    if (current.length > 0)
-      retval.push(current);
-    return retval;
-  };
-  var verticesCount = (rings) => {
-    var acc = 0;
-    for (let ring of rings) {
-      acc += ring.length;
-    }
-    return acc;
-  };
-  var splitMultiPolygon = (mp, maxVertices) => {
-    let complete_polygons = [];
-    let current_polygon = [];
-    for (let poly of mp) {
-      if (current_polygon.length > 0 && !isCCW(poly)) {
-        complete_polygons.push(current_polygon);
-        current_polygon = [];
-      }
-      current_polygon.push(poly);
-    }
-    if (current_polygon.length > 0)
-      complete_polygons.push(current_polygon);
-    let retval = [];
-    var current = [];
-    var currentVertices = 0;
-    for (let complete_polygon of complete_polygons) {
-      var temp = complete_polygon;
-      var vc = verticesCount(complete_polygon);
-      if (vc > maxVertices) {
-        temp = simplify(complete_polygon, maxVertices);
-        vc = maxVertices;
-      }
-      if (current.length > 0 && currentVertices + vc > maxVertices) {
-        retval.push(current);
-        current = [];
-        currentVertices = 0;
-      }
-      current = current.concat(temp);
-      currentVertices += vc;
-    }
-    if (current.length > 0)
-      retval.push(current);
-    return retval;
-  };
-
-  // src/tilecache.ts
-  var GeomType;
-  (function(GeomType2) {
-    GeomType2[GeomType2["Point"] = 1] = "Point";
-    GeomType2[GeomType2["Line"] = 2] = "Line";
-    GeomType2[GeomType2["Polygon"] = 3] = "Polygon";
-  })(GeomType || (GeomType = {}));
-  function toIndex(c2) {
-    return c2.x + ":" + c2.y + ":" + c2.z;
-  }
-  var loadGeomAndBbox = (pbf, geometry, scale) => {
-    pbf.pos = geometry;
-    var end = pbf.readVarint() + pbf.pos, cmd = 1, length = 0, x = 0, y = 0, x1 = Infinity, x2 = -Infinity, y1 = Infinity, y2 = -Infinity;
-    var lines = [];
-    var line;
-    while (pbf.pos < end) {
-      if (length <= 0) {
-        var cmdLen = pbf.readVarint();
-        cmd = cmdLen & 7;
-        length = cmdLen >> 3;
-      }
-      length--;
-      if (cmd === 1 || cmd === 2) {
-        x += pbf.readSVarint() * scale;
-        y += pbf.readSVarint() * scale;
-        if (x < x1)
-          x1 = x;
-        if (x > x2)
-          x2 = x;
-        if (y < y1)
-          y1 = y;
-        if (y > y2)
-          y2 = y;
-        if (cmd === 1) {
-          if (line)
-            lines.push(line);
-          line = [];
-        }
-        line.push(new import_point_geometry3.default(x, y));
-      } else if (cmd === 7) {
-        if (line)
-          line.push(line[0].clone());
-      } else
-        throw new Error("unknown command " + cmd);
-    }
-    if (line)
-      lines.push(line);
-    return { geom: lines, bbox: { minX: x1, minY: y1, maxX: x2, maxY: y2 } };
-  };
-  function parseTile(buffer, tileSize) {
-    let v = new import_vector_tile.VectorTile(new import_pbf.default(buffer));
-    let result = new Map();
-    for (let [key, value] of Object.entries(v.layers)) {
-      let features = [];
-      let layer = value;
-      for (let i2 = 0; i2 < layer.length; i2++) {
-        let result2 = loadGeomAndBbox(layer.feature(i2)._pbf, layer.feature(i2)._geometry, tileSize / layer.extent);
-        let numVertices = 0;
-        for (let part of result2.geom)
-          numVertices += part.length;
-        let split = [];
-        if (numVertices > MAX_VERTICES_PER_DRAW_CALL && layer.feature(i2).type != 1) {
-          if (layer.feature(i2).type == 2) {
-            split = splitMultiLineString(result2.geom, MAX_VERTICES_PER_DRAW_CALL);
-          } else {
-            split = splitMultiPolygon(result2.geom, MAX_VERTICES_PER_DRAW_CALL);
-          }
-          for (let part of split) {
-            features.push({
-              id: layer.feature(i2).id,
-              geomType: layer.feature(i2).type,
-              geom: part,
-              numVertices,
-              bbox: result2.bbox,
-              props: layer.feature(i2).properties
-            });
-          }
-        } else {
-          features.push({
-            id: layer.feature(i2).id,
-            geomType: layer.feature(i2).type,
-            geom: result2.geom,
-            numVertices,
-            bbox: result2.bbox,
-            props: layer.feature(i2).properties
-          });
-        }
-      }
-      result.set(key, features);
-    }
-    return result;
-  }
-  var PmtilesSource = class {
-    constructor(url, shouldCancelZooms) {
-      if (url.url) {
-        this.p = url;
-      } else {
-        this.p = new PMTiles(url);
-      }
-      this.controllers = [];
-      this.shouldCancelZooms = shouldCancelZooms;
-    }
-    get(c2, tileSize) {
-      return __async(this, null, function* () {
-        if (this.shouldCancelZooms) {
-          this.controllers = this.controllers.filter((cont) => {
-            if (cont[0] != c2.z) {
-              cont[1].abort();
-              return false;
-            }
-            return true;
-          });
-        }
-        let result = yield this.p.getZxy(c2.z, c2.x, c2.y);
-        if (!result)
-          throw new Error(`Tile ${c2.z} ${c2.x} ${c2.y} not found in archive`);
-        const controller = new AbortController();
-        this.controllers.push([c2.z, controller]);
-        const signal = controller.signal;
-        return new Promise((resolve, reject) => {
-          fetch(this.p.url, {
-            headers: {
-              Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1)
-            },
-            signal
-          }).then((resp) => {
-            return resp.arrayBuffer();
-          }).then((buffer) => {
-            let result2 = parseTile(buffer, tileSize);
-            resolve(result2);
-          }).catch((e2) => {
-            reject(e2);
-          });
-        });
-      });
-    }
-  };
-  var ZxySource = class {
-    constructor(url, shouldCancelZooms) {
-      this.url = url;
-      this.controllers = [];
-      this.shouldCancelZooms = shouldCancelZooms;
-    }
-    get(c2, tileSize) {
-      return __async(this, null, function* () {
-        if (this.shouldCancelZooms) {
-          this.controllers = this.controllers.filter((cont) => {
-            if (cont[0] != c2.z) {
-              cont[1].abort();
-              return false;
-            }
-            return true;
-          });
-        }
-        let url = this.url.replace("{z}", c2.z.toString()).replace("{x}", c2.x.toString()).replace("{y}", c2.y.toString());
-        const controller = new AbortController();
-        this.controllers.push([c2.z, controller]);
-        const signal = controller.signal;
-        return new Promise((resolve, reject) => {
-          fetch(url, { signal }).then((resp) => {
-            return resp.arrayBuffer();
-          }).then((buffer) => {
-            let result = parseTile(buffer, tileSize);
-            resolve(result);
-          }).catch((e2) => {
-            reject(e2);
-          });
-        });
-      });
-    }
-  };
-  var R = 6378137;
-  var MAX_LATITUDE = 85.0511287798;
-  var MAXCOORD = R * Math.PI;
-  var project = (latlng) => {
-    let d = Math.PI / 180;
-    let constrained_lat = Math.max(Math.min(MAX_LATITUDE, latlng[0]), -MAX_LATITUDE);
-    let sin = Math.sin(constrained_lat * d);
-    return new import_point_geometry3.default(R * latlng[1] * d, R * Math.log((1 + sin) / (1 - sin)) / 2);
-  };
-  function sqr(x) {
-    return x * x;
-  }
-  function dist2(v, w) {
-    return sqr(v.x - w.x) + sqr(v.y - w.y);
-  }
-  function distToSegmentSquared(p2, v, w) {
-    var l2 = dist2(v, w);
-    if (l2 === 0)
-      return dist2(p2, v);
-    var t2 = ((p2.x - v.x) * (w.x - v.x) + (p2.y - v.y) * (w.y - v.y)) / l2;
-    t2 = Math.max(0, Math.min(1, t2));
-    return dist2(p2, { x: v.x + t2 * (w.x - v.x), y: v.y + t2 * (w.y - v.y) });
-  }
-  function isInRing(point, ring) {
-    var inside = false;
-    for (var i2 = 0, j = ring.length - 1; i2 < ring.length; j = i2++) {
-      var xi = ring[i2].x, yi = ring[i2].y;
-      var xj = ring[j].x, yj = ring[j].y;
-      var intersect = yi > point.y != yj > point.y && point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi;
-      if (intersect)
-        inside = !inside;
-    }
-    return inside;
-  }
-  function isCCW(ring) {
-    var area2 = 0;
-    for (var i2 = 0; i2 < ring.length; i2++) {
-      let j = (i2 + 1) % ring.length;
-      area2 += ring[i2].x * ring[j].y;
-      area2 -= ring[j].x * ring[i2].y;
-    }
-    return area2 < 0;
-  }
-  function pointInPolygon(point, geom) {
-    var isInCurrentExterior = false;
-    for (let ring of geom) {
-      if (isCCW(ring)) {
-        if (isInRing(point, ring))
-          isInCurrentExterior = false;
-      } else {
-        if (isInCurrentExterior)
-          return true;
-        if (isInRing(point, ring))
-          isInCurrentExterior = true;
-      }
-    }
-    return isInCurrentExterior;
-  }
-  function pointMinDistToPoints(point, geom) {
-    let min = Infinity;
-    for (let l2 of geom) {
-      let dist = Math.sqrt(dist2(point, l2[0]));
-      if (dist < min)
-        min = dist;
-    }
-    return min;
-  }
-  function pointMinDistToLines(point, geom) {
-    let min = Infinity;
-    for (let l2 of geom) {
-      for (var i2 = 0; i2 < l2.length - 1; i2++) {
-        let dist = Math.sqrt(distToSegmentSquared(point, l2[i2], l2[i2 + 1]));
-        if (dist < min)
-          min = dist;
-      }
-    }
-    return min;
-  }
-  var TileCache = class {
-    constructor(source, tileSize) {
-      this.source = source;
-      this.cache = new Map();
-      this.inflight = new Map();
-      this.tileSize = tileSize;
-    }
-    queryFeatures(lng, lat, zoom, brushSize) {
-      let projected = project([lat, lng]);
-      var normalized = new import_point_geometry3.default((projected.x + MAXCOORD) / (MAXCOORD * 2), 1 - (projected.y + MAXCOORD) / (MAXCOORD * 2));
-      if (normalized.x > 1)
-        normalized.x = normalized.x - Math.floor(normalized.x);
-      let on_zoom = normalized.mult(1 << zoom);
-      let tile_x = Math.floor(on_zoom.x);
-      let tile_y = Math.floor(on_zoom.y);
-      const idx = toIndex({ z: zoom, x: tile_x, y: tile_y });
-      let retval = [];
-      let entry = this.cache.get(idx);
-      if (entry) {
-        const center = {
-          x: (on_zoom.x - tile_x) * this.tileSize,
-          y: (on_zoom.y - tile_y) * this.tileSize
-        };
-        for (let [layer_name, layer_arr] of entry.data.entries()) {
-          for (let feature of layer_arr) {
-            if (feature.geomType == 1) {
-              if (pointMinDistToPoints(center, feature.geom) < brushSize) {
-                retval.push({ feature, layerName: layer_name });
-              }
-            } else if (feature.geomType == 2) {
-              if (pointMinDistToLines(center, feature.geom) < brushSize) {
-                retval.push({ feature, layerName: layer_name });
-              }
-            } else {
-              if (pointInPolygon(center, feature.geom)) {
-                retval.push({ feature, layerName: layer_name });
-              }
-            }
-          }
-        }
-      }
-      return retval;
-    }
-    get(c2) {
-      return __async(this, null, function* () {
-        const idx = toIndex(c2);
-        return new Promise((resolve, reject) => {
-          let entry = this.cache.get(idx);
-          if (entry) {
-            entry.used = performance.now();
-            resolve(entry.data);
-          } else {
-            let ifentry = this.inflight.get(idx);
-            if (ifentry) {
-              ifentry.push([resolve, reject]);
-            } else {
-              this.inflight.set(idx, []);
-              this.source.get(c2, this.tileSize).then((tile) => {
-                this.cache.set(idx, { used: performance.now(), data: tile });
-                let ifentry2 = this.inflight.get(idx);
-                if (ifentry2)
-                  ifentry2.forEach((f2) => f2[0](tile));
-                this.inflight.delete(idx);
-                resolve(tile);
-                if (this.cache.size >= 64) {
-                  let min_used = Infinity;
-                  let min_key = void 0;
-                  this.cache.forEach((value, key) => {
-                    if (value.used < min_used) {
-                      min_used = value.used;
-                      min_key = key;
-                    }
-                  });
-                  if (min_key)
-                    this.cache.delete(min_key);
-                }
-              }).catch((e2) => {
-                let ifentry2 = this.inflight.get(idx);
-                if (ifentry2)
-                  ifentry2.forEach((f2) => f2[1](e2));
-                this.inflight.delete(idx);
-                reject(e2);
-              });
-            }
-          }
-        });
-      });
-    }
-  };
-
-  // src/view.ts
-  var transformGeom = (geom, scale, translate) => {
-    let retval = [];
-    for (let arr2 of geom) {
-      let loop = [];
-      for (let coord of arr2) {
-        loop.push(coord.clone().mult(scale).add(translate));
-      }
-      retval.push(loop);
-    }
-    return retval;
-  };
-  var wrap = (val, z2) => {
-    let dim = 1 << z2;
-    if (val < 0)
-      val = dim + val;
-    if (val >= dim)
-      val = val % dim;
-    return val;
-  };
-  var View = class {
-    constructor(tileCache, maxDataLevel, levelDiff, eventQueue) {
-      this.tileCache = tileCache;
-      this.maxDataLevel = maxDataLevel;
-      this.levelDiff = levelDiff;
-      this.eventQueue = eventQueue;
-    }
-    dataTilesForBounds(display_zoom, bounds) {
-      let fractional = Math.pow(2, display_zoom) / Math.pow(2, Math.ceil(display_zoom));
-      let needed = [];
-      var scale = 1;
-      var dim = this.tileCache.tileSize;
-      if (display_zoom < this.levelDiff) {
-        scale = 1 / (1 << this.levelDiff - display_zoom) * fractional;
-        needed.push({
-          data_tile: { z: 0, x: 0, y: 0 },
-          origin: new import_point_geometry4.default(0, 0),
-          scale,
-          dim: dim * scale
-        });
-      } else if (display_zoom <= this.levelDiff + this.maxDataLevel) {
-        let f2 = 1 << this.levelDiff;
-        let basetile_size = 256 * fractional;
-        let data_zoom = Math.ceil(display_zoom) - this.levelDiff;
-        let mintile_x = Math.floor(bounds.minX / f2 / basetile_size);
-        let mintile_y = Math.floor(bounds.minY / f2 / basetile_size);
-        let maxtile_x = Math.floor(bounds.maxX / f2 / basetile_size);
-        let maxtile_y = Math.floor(bounds.maxY / f2 / basetile_size);
-        for (var tx = mintile_x; tx <= maxtile_x; tx++) {
-          for (var ty = mintile_y; ty <= maxtile_y; ty++) {
-            let origin = new import_point_geometry4.default(tx * f2 * basetile_size, ty * f2 * basetile_size);
-            needed.push({
-              data_tile: {
-                z: data_zoom,
-                x: wrap(tx, data_zoom),
-                y: wrap(ty, data_zoom)
-              },
-              origin,
-              scale: fractional,
-              dim: dim * fractional
-            });
-          }
-        }
-      } else {
-        let f2 = 1 << this.levelDiff;
-        scale = (1 << Math.ceil(display_zoom) - this.maxDataLevel - this.levelDiff) * fractional;
-        let mintile_x = Math.floor(bounds.minX / f2 / 256 / scale);
-        let mintile_y = Math.floor(bounds.minY / f2 / 256 / scale);
-        let maxtile_x = Math.floor(bounds.maxX / f2 / 256 / scale);
-        let maxtile_y = Math.floor(bounds.maxY / f2 / 256 / scale);
-        for (var tx = mintile_x; tx <= maxtile_x; tx++) {
-          for (var ty = mintile_y; ty <= maxtile_y; ty++) {
-            let origin = new import_point_geometry4.default(tx * f2 * 256 * scale, ty * f2 * 256 * scale);
-            needed.push({
-              data_tile: {
-                z: this.maxDataLevel,
-                x: wrap(tx, this.maxDataLevel),
-                y: wrap(ty, this.maxDataLevel)
-              },
-              origin,
-              scale,
-              dim: dim * scale
-            });
-          }
-        }
-      }
-      return needed;
-    }
-    dataTileForDisplayTile(display_tile) {
-      var data_tile;
-      var scale = 1;
-      var dim = this.tileCache.tileSize;
-      var origin;
-      if (display_tile.z < this.levelDiff) {
-        data_tile = { z: 0, x: 0, y: 0 };
-        scale = 1 / (1 << this.levelDiff - display_tile.z);
-        origin = new import_point_geometry4.default(0, 0);
-        dim = dim * scale;
-      } else if (display_tile.z <= this.levelDiff + this.maxDataLevel) {
-        let f2 = 1 << this.levelDiff;
-        data_tile = {
-          z: display_tile.z - this.levelDiff,
-          x: Math.floor(display_tile.x / f2),
-          y: Math.floor(display_tile.y / f2)
-        };
-        origin = new import_point_geometry4.default(data_tile.x * f2 * 256, data_tile.y * f2 * 256);
-      } else {
-        scale = 1 << display_tile.z - this.maxDataLevel - this.levelDiff;
-        let f2 = 1 << this.levelDiff;
-        data_tile = {
-          z: this.maxDataLevel,
-          x: Math.floor(display_tile.x / f2 / scale),
-          y: Math.floor(display_tile.y / f2 / scale)
-        };
-        origin = new import_point_geometry4.default(data_tile.x * f2 * scale * 256, data_tile.y * f2 * scale * 256);
-        dim = dim * scale;
-      }
-      return { data_tile, scale, origin, dim };
-    }
-    getBbox(display_zoom, bounds) {
-      return __async(this, null, function* () {
-        var _a, _b;
-        (_a = this.eventQueue) == null ? void 0 : _a.publish(ProtomapsEvent.TileFetchStart);
-        let needed = this.dataTilesForBounds(display_zoom, bounds);
-        let result = yield Promise.all(needed.map((tt) => this.tileCache.get(tt.data_tile)));
-        (_b = this.eventQueue) == null ? void 0 : _b.publish(ProtomapsEvent.TileFetchEnd);
-        return result.map((data, i2) => {
-          let tt = needed[i2];
-          return {
-            data,
-            z: display_zoom,
-            data_tile: tt.data_tile,
-            scale: tt.scale,
-            dim: tt.dim,
-            origin: tt.origin
-          };
-        });
-      });
-    }
-    getDisplayTile(display_tile) {
-      return __async(this, null, function* () {
-        let tt = this.dataTileForDisplayTile(display_tile);
-        const data = yield this.tileCache.get(tt.data_tile);
-        return {
-          data,
-          z: display_tile.z,
-          data_tile: tt.data_tile,
-          scale: tt.scale,
-          origin: tt.origin,
-          dim: tt.dim
-        };
-      });
-    }
-    queryFeatures(lng, lat, display_zoom) {
-      let rounded_zoom = Math.round(display_zoom);
-      let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
-      let brush_size = 16 / (1 << rounded_zoom - data_zoom);
-      return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
-    }
-  };
-  var sourceToView = (o2) => {
-    const level_diff = o2.levelDiff === void 0 ? 2 : o2.levelDiff;
-    const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
-    let source;
-    if (o2.url.url) {
-      source = new PmtilesSource(o2.url, true);
-    } else if (o2.url.endsWith(".pmtiles")) {
-      source = new PmtilesSource(o2.url, true);
-    } else {
-      source = new ZxySource(o2.url, true);
-    }
-    const cache = new TileCache(source, 256 * 1 << level_diff);
-    return new View(cache, maxDataZoom, level_diff);
-  };
-  var sourcesToViews = (options) => {
-    const sources = new Map();
-    if (options.sources) {
-      for (const [key, value] of Object.entries(options.sources)) {
-        sources.set(key, sourceToView(value));
-      }
-    } else {
-      sources.set("", sourceToView(options));
-    }
-    return sources;
-  };
-
   // src/painter.ts
-  var import_point_geometry5 = __toModule(require_point_geometry());
   var isFeatureInTile = (f2, scaleFactor, origin, tileBbox) => {
     const fbox = f2.bbox;
     return !(fbox.maxX * scaleFactor + origin.x < tileBbox.minX || fbox.minX * scaleFactor + origin.x > tileBbox.maxX || fbox.minY * scaleFactor + origin.y > tileBbox.maxY || fbox.maxY * scaleFactor + origin.y < tileBbox.minY);
@@ -5079,14 +4868,14 @@ var protomaps = (() => {
 
   // node_modules/protosprites/index.js
   var potpack = (boxes) => {
-    let area2 = 0;
+    let area = 0;
     let maxWidth = 0;
     for (const box of boxes) {
-      area2 += box.w * box.h;
+      area += box.w * box.h;
       maxWidth = Math.max(maxWidth, box.w);
     }
     boxes.sort((a2, b) => b.h - a2.h);
-    const startWidth = Math.max(Math.ceil(Math.sqrt(area2 / 0.95)), maxWidth);
+    const startWidth = Math.max(Math.ceil(Math.sqrt(area / 0.95)), maxWidth);
     const spaces = [{ x: 0, y: 0, w: startWidth, h: Infinity }];
     let width = 0;
     let height = 0;
@@ -5125,7 +4914,7 @@ var protomaps = (() => {
     return {
       w: width,
       h: height,
-      fill: area2 / (width * height) || 0
+      fill: area / (width * height) || 0
     };
   };
   var mkimg = (src) => {
