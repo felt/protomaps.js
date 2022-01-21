@@ -100,7 +100,7 @@ export class DataDrivenOffsetSymbolizer {
         if ([TextPlacements.N, TextPlacements.S].includes(placement))
             return offsetX - labelHalfWidth;
         if ([TextPlacements.NW, TextPlacements.W, TextPlacements.SW].includes(placement))
-            return offsetX - labelWidth;
+            return -offsetX - labelWidth;
         return offsetX;
     }
     computeYAxisOffset(offsetY, fb, placement) {
@@ -110,7 +110,7 @@ export class DataDrivenOffsetSymbolizer {
         if ([TextPlacements.E, TextPlacements.W].includes(placement))
             return offsetY - labelCenterHeight;
         if ([TextPlacements.NW, TextPlacements.NE, TextPlacements.N].includes(placement))
-            return offsetY - labelBottom;
+            return -offsetY - labelBottom;
         if ([TextPlacements.SW, TextPlacements.SE, TextPlacements.S].includes(placement))
             return offsetY + labelHalfHeight;
         return offsetY;

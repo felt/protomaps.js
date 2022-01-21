@@ -156,7 +156,7 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
         placement
       )
     )
-      return offsetX - labelWidth;
+      return -offsetX - labelWidth;
     return offsetX;
   }
 
@@ -175,7 +175,7 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
         placement
       )
     )
-      return offsetY - labelBottom;
+      return -offsetY - labelBottom;
     if (
       [TextPlacements.SW, TextPlacements.SE, TextPlacements.S].includes(
         placement

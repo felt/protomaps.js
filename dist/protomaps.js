@@ -5541,7 +5541,7 @@ var protomaps = (() => {
       if ([1, 5].includes(placement))
         return offsetX - labelHalfWidth;
       if ([8, 7, 6].includes(placement))
-        return offsetX - labelWidth;
+        return -offsetX - labelWidth;
       return offsetX;
     }
     computeYAxisOffset(offsetY, fb, placement) {
@@ -5551,7 +5551,7 @@ var protomaps = (() => {
       if ([3, 7].includes(placement))
         return offsetY - labelCenterHeight;
       if ([8, 2, 1].includes(placement))
-        return offsetY - labelBottom;
+        return -offsetY - labelBottom;
       if ([6, 4, 5].includes(placement))
         return offsetY + labelHalfHeight;
       return offsetY;
