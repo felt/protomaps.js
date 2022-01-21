@@ -2195,7 +2195,7 @@ var protomaps = (() => {
   }
 
   // src/symbolizer.ts
-  var MAX_VERTICES_PER_DRAW_CALL = 5400;
+  var MAX_VERTICES_PER_DRAW_CALL = 54e3;
   var Justify;
   (function(Justify3) {
     Justify3[Justify3["Left"] = 1] = "Left";

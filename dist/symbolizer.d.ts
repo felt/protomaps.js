@@ -2,7 +2,7 @@ import Point from "@mapbox/point-geometry";
 import { Feature, Bbox } from "./tilecache";
 import { NumberAttr, StringAttr, TextAttr, FontAttr, ArrayAttr } from "./attribute";
 import { Label, Layout } from "./labeler";
-export declare const MAX_VERTICES_PER_DRAW_CALL = 5400;
+export declare const MAX_VERTICES_PER_DRAW_CALL = 54000;
 export interface GroupedGeometries {
     geoms: Point[][][];
     features: Feature[];

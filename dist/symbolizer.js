@@ -8,7 +8,7 @@ import { NumberAttr, StringAttr, TextAttr, FontAttr, ArrayAttr, } from "./attrib
 import { linebreak } from "./text";
 import { lineCells, simpleLabel } from "./line";
 // https://bugs.webkit.org/show_bug.cgi?id=230751
-export const MAX_VERTICES_PER_DRAW_CALL = 5400;
+export const MAX_VERTICES_PER_DRAW_CALL = 54000;
 export var Justify;
 (function (Justify) {
     Justify[Justify["Left"] = 1] = "Left";
