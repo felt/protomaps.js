@@ -63,6 +63,7 @@ export class TextAttr {
       for (let property of label_props) {
         if (f.props.hasOwnProperty(property)) {
           retval = f.props[property];
+          if (typeof retval === "number") retval = `${retval}`;
           break;
         }
       }

@@ -1984,6 +1984,8 @@ var protomaps = (() => {
         for (let property of label_props) {
           if (f2.props.hasOwnProperty(property)) {
             retval = f2.props[property];
+            if (typeof retval === "number")
+              retval = `${retval}`;
             break;
           }
         }
