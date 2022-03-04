@@ -4948,13 +4948,13 @@ var protomaps = (() => {
             ctx.strokeStyle = this.debug;
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, 256);
+            ctx.moveTo(1, 0);
+            ctx.lineTo(1, 256);
             ctx.stroke();
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(256, 0);
+            ctx.moveTo(0, 1);
+            ctx.lineTo(256, 1);
             ctx.stroke();
             ctx.restore();
           }
