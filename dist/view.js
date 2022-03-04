@@ -197,6 +197,7 @@ export const sourceToView = (o) => {
     const cache = new TileCache(source, (256 * 1) << level_diff);
     return new View(cache, maxDataZoom, level_diff);
 };
+export const BasemapLayerSourceName = "";
 export const sourcesToViews = (options) => {
     const sources = new Map();
     if (options.sources) {
@@ -205,7 +206,7 @@ export const sourcesToViews = (options) => {
         }
     }
     else {
-        sources.set("", sourceToView(options));
+        sources.set(BasemapLayerSourceName, sourceToView(options));
     }
     return sources;
 };

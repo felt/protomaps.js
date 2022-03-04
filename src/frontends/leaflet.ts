@@ -3,7 +3,13 @@ declare var L: any;
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 
-import { PreparedTile, sourcesToViews, sourceToView, View } from "../view";
+import {
+  BasemapLayerSourceName,
+  PreparedTile,
+  sourcesToViews,
+  sourceToView,
+  View,
+} from "../view";
 import { painter, Rule } from "../painter";
 import { Labelers, LabelRule } from "../labeler";
 import { light } from "../default_style/light";
@@ -388,24 +394,23 @@ const leafletLayer = (options: any): any => {
       dataSources: DataSource[],
       dataLabelsOnTop = false
     ) {
-      const basemapLayerSourceName = "";
       const dataLabelRules: LabelRule[] = [];
 
       this.paint_rules = this.paint_rules.filter(
-        (r: Rule) => !r.dataSource || r.dataSource === basemapLayerSourceName
+        (r: Rule) => !r.dataSource || r.dataSource === BasemapLayerSourceName
       );
       this.label_rules = this.label_rules.filter(
         (r: LabelRule) =>
-          !r.dataSource || r.dataSource === basemapLayerSourceName
+          !r.dataSource || r.dataSource === BasemapLayerSourceName
       );
       // As we want to keep the order set by dataSources, we first remove
       // all non-basemap views and recreate with dataSources
       this.views.forEach((_: View, k: string) => {
-        if (k === basemapLayerSourceName) return;
+        if (k === BasemapLayerSourceName) return;
         this.views.delete(k);
       });
       dataSources.forEach((d) => {
-        if (d.name === basemapLayerSourceName)
+        if (d.name === BasemapLayerSourceName)
           console.warn(
             "Overwritting the basemap using updateDataSources will result in duplicated rules"
           );

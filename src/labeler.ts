@@ -1,6 +1,6 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { PreparedTile, transformGeom } from "./view";
+import { BasemapLayerSourceName, PreparedTile, transformGeom } from "./view";
 import { Zxy, toIndex, Bbox } from "./tilecache";
 // @ts-ignore
 import RBush from "rbush";
@@ -332,7 +332,7 @@ export class Labeler {
       if (rule.minzoom && this.z < rule.minzoom) continue;
       if (rule.maxzoom && this.z > rule.maxzoom) continue;
 
-      let dsName = rule.dataSource || "";
+      let dsName = rule.dataSource || BasemapLayerSourceName;
       let pt = prepared_tilemap.get(dsName);
       if (!pt) continue;
       let key = toIndex(pt.data_tile) + ":" + dsName;

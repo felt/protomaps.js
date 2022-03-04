@@ -3632,6 +3632,7 @@ var sourceToView = (o2) => {
   const cache = new TileCache(source, 256 * 1 << level_diff);
   return new View(cache, maxDataZoom, level_diff);
 };
+var BasemapLayerSourceName = "";
 var sourcesToViews = (options) => {
   const sources = new Map();
   if (options.sources) {
@@ -3639,7 +3640,7 @@ var sourcesToViews = (options) => {
       sources.set(key, sourceToView(value));
     }
   } else {
-    sources.set("", sourceToView(options));
+    sources.set(BasemapLayerSourceName, sourceToView(options));
   }
   return sources;
 };
@@ -3717,7 +3718,7 @@ function painter(ctx, z2, prepared_tilemaps, label_data, rules, bbox, origin, cl
         continue;
       if (rule.maxzoom && z2 > rule.maxzoom)
         continue;
-      let prepared_tile = prepared_tilemap.get(rule.dataSource || "");
+      let prepared_tile = prepared_tilemap.get(rule.dataSource || BasemapLayerSourceName);
       if (!prepared_tile)
         continue;
       var layer = prepared_tile.data.get(rule.dataLayer);
@@ -4014,7 +4015,7 @@ var Labeler = class {
         continue;
       if (rule.maxzoom && this.z > rule.maxzoom)
         continue;
-      let dsName = rule.dataSource || "";
+      let dsName = rule.dataSource || BasemapLayerSourceName;
       let pt = prepared_tilemap.get(dsName);
       if (!pt)
         continue;
@@ -4981,17 +4982,16 @@ var leafletLayer = (options) => {
       return map.off("click", this.inspector);
     }
     updateDataSources(dataSources, dataLabelsOnTop = false) {
-      const basemapLayerSourceName = "";
       const dataLabelRules = [];
-      this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
-      this.label_rules = this.label_rules.filter((r2) => !r2.dataSource || r2.dataSource === basemapLayerSourceName);
+      this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === BasemapLayerSourceName);
+      this.label_rules = this.label_rules.filter((r2) => !r2.dataSource || r2.dataSource === BasemapLayerSourceName);
       this.views.forEach((_2, k) => {
-        if (k === basemapLayerSourceName)
+        if (k === BasemapLayerSourceName)
           return;
         this.views.delete(k);
       });
       dataSources.forEach((d) => {
-        if (d.name === basemapLayerSourceName)
+        if (d.name === BasemapLayerSourceName)
           console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
         this.views.set(d.name, sourceToView(d.options));
         this.paint_rules = this.paint_rules.concat(d.paintRules);
@@ -5510,6 +5510,7 @@ var DataDrivenOffsetTextSymbolizer = class {
   }
 };
 export {
+  BasemapLayerSourceName,
   CenteredSymbolizer,
   CenteredTextSymbolizer,
   CircleSymbolizer,

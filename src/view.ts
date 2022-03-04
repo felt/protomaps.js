@@ -248,6 +248,8 @@ export const sourceToView = (o: any) => {
   return new View(cache, maxDataZoom, level_diff);
 };
 
+export const BasemapLayerSourceName = "";
+
 export const sourcesToViews = (options: any) => {
   const sources = new Map<string, View>();
   if (options.sources) {
@@ -255,7 +257,7 @@ export const sourcesToViews = (options: any) => {
       sources.set(key, sourceToView(value));
     }
   } else {
-    sources.set("", sourceToView(options));
+    sources.set(BasemapLayerSourceName, sourceToView(options));
   }
   return sources;
 };

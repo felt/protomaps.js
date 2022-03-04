@@ -1,6 +1,6 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { transformGeom } from "./view";
+import { BasemapLayerSourceName, transformGeom } from "./view";
 // xray
 import { GeomType } from "./tilecache";
 import { CircleSymbolizer, LineSymbolizer, PolygonSymbolizer, } from "./symbolizer";
@@ -96,7 +96,7 @@ export function painter(ctx, z, prepared_tilemaps, label_data, rules, bbox, orig
                 continue;
             if (rule.maxzoom && z > rule.maxzoom)
                 continue;
-            let prepared_tile = prepared_tilemap.get(rule.dataSource || "");
+            let prepared_tile = prepared_tilemap.get(rule.dataSource || BasemapLayerSourceName);
             if (!prepared_tile)
                 continue;
             var layer = prepared_tile.data.get(rule.dataLayer);

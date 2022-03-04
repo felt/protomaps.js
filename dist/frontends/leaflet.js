@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { sourcesToViews, sourceToView } from "../view";
+import { BasemapLayerSourceName, sourcesToViews, sourceToView, } from "../view";
 import { painter } from "../painter";
 import { Labelers } from "../labeler";
 import { light } from "../default_style/light";
@@ -272,19 +272,18 @@ const leafletLayer = (options) => {
             return map.off("click", this.inspector);
         }
         updateDataSources(dataSources, dataLabelsOnTop = false) {
-            const basemapLayerSourceName = "";
             const dataLabelRules = [];
-            this.paint_rules = this.paint_rules.filter((r) => !r.dataSource || r.dataSource === basemapLayerSourceName);
-            this.label_rules = this.label_rules.filter((r) => !r.dataSource || r.dataSource === basemapLayerSourceName);
+            this.paint_rules = this.paint_rules.filter((r) => !r.dataSource || r.dataSource === BasemapLayerSourceName);
+            this.label_rules = this.label_rules.filter((r) => !r.dataSource || r.dataSource === BasemapLayerSourceName);
             // As we want to keep the order set by dataSources, we first remove
             // all non-basemap views and recreate with dataSources
             this.views.forEach((_, k) => {
-                if (k === basemapLayerSourceName)
+                if (k === BasemapLayerSourceName)
                     return;
                 this.views.delete(k);
             });
             dataSources.forEach((d) => {
-                if (d.name === basemapLayerSourceName)
+                if (d.name === BasemapLayerSourceName)
                     console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
                 this.views.set(d.name, sourceToView(d.options));
                 this.paint_rules = this.paint_rules.concat(d.paintRules);
