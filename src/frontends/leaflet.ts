@@ -213,6 +213,17 @@ const leafletLayer = (options: any): any => {
         ctx.font = "600 12px sans-serif";
         ctx.fillText(coords.z + " " + coords.x + " " + coords.y, 4, 14);
 
+        if (prepared_tilemap.size !== 0) {
+          const [firstTile] = prepared_tilemap.values();
+          const data_tile = firstTile.data_tile;
+          ctx.font = "200 12px sans-serif";
+          ctx.fillText(
+            data_tile.z + " " + data_tile.x + " " + data_tile.y,
+            4,
+            28
+          );
+        }
+
         ctx.font = "600 10px sans-serif";
         if (painting_time > 8) {
           ctx.fillText(painting_time.toFixed() + " ms paint", 4, 42);
