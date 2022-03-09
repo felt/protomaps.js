@@ -1,7 +1,7 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 import { Zxy, Bbox, Feature } from "./tilecache";
-import { PreparedTile, transformGeom } from "./view";
+import { BasemapLayerSourceName, PreparedTile, transformGeom } from "./view";
 import { PaintSymbolizer } from "./symbolizer";
 import { Index } from "./labeler";
 
@@ -153,7 +153,9 @@ export function painter(
     for (var rule of rules) {
       if (rule.minzoom && z < rule.minzoom) continue;
       if (rule.maxzoom && z > rule.maxzoom) continue;
-      let prepared_tile = prepared_tilemap.get(rule.dataSource || "");
+      let prepared_tile = prepared_tilemap.get(
+        rule.dataSource || BasemapLayerSourceName
+      );
       if (!prepared_tile) continue;
       var layer = prepared_tile.data.get(rule.dataLayer);
       if (layer === undefined) continue;

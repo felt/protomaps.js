@@ -30,4 +30,5 @@ export declare class View {
     queryFeatures(lng: number, lat: number, display_zoom: number): import("./tilecache").PickedFeature[];
 }
 export declare const sourceToView: (o: any) => View;
+export declare const BasemapLayerSourceName = "";
 export declare const sourcesToViews: (options: any) => Map<string, View>;
