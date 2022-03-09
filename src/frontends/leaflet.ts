@@ -179,8 +179,8 @@ const leafletLayer = (options: any): any => {
       };
       let origin = new Point(256 * coords.x, 256 * coords.y);
 
-      element.width = this.tile_size + 1;
-      element.height = this.tile_size + 1;
+      element.width = this.tile_size + 2;
+      element.height = this.tile_size + 2;
       let ctx = element.getContext("2d");
       ctx.setTransform(this.tile_size / 256, 0, 0, this.tile_size / 256, 0, 0);
       ctx.clearRect(0, 0, 256, 256);
