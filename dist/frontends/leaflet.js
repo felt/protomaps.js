@@ -127,8 +127,8 @@ const leafletLayer = (options) => {
                     maxY: 256 * (coords.y + 1) + BUF,
                 };
                 let origin = new Point(256 * coords.x, 256 * coords.y);
-                element.width = this.tile_size + 2;
-                element.height = this.tile_size + 2;
+                element.width = this.tile_size;
+                element.height = this.tile_size;
                 let ctx = element.getContext("2d");
                 ctx.setTransform(this.tile_size / 256, 0, 0, this.tile_size / 256, 0, 0);
                 ctx.clearRect(0, 0, 256, 256);
@@ -161,13 +161,13 @@ const leafletLayer = (options) => {
                     ctx.strokeStyle = this.debug;
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
-                    ctx.moveTo(1, 0);
-                    ctx.lineTo(1, 256);
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, 256);
                     ctx.stroke();
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
-                    ctx.moveTo(0, 1);
-                    ctx.lineTo(256, 1);
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(256, 0);
                     ctx.stroke();
                     ctx.restore();
                 }
