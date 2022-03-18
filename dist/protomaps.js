@@ -4889,7 +4889,7 @@ var protomaps = (() => {
   };
 
   // src/frontends/leaflet.ts
-  var LeafletTileSize = 256;
+  var LeafletTileSize = 258;
   var timer = (duration) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
