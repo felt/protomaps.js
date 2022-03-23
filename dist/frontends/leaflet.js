@@ -229,6 +229,8 @@ const leafletLayer = (options) => {
             return featuresBySourceName;
         }
         queryRenderedFeatures(lng, lat) {
+            // Instead of getting all the features, we only get
+            // the rendered ones
             let featuresBySourceName = new Map();
             for (var [sourceName, view] of this.views) {
                 const z = this._map.getZoom();
