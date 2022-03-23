@@ -4957,12 +4957,12 @@ var leafletLayer = (options) => {
           ctx.lineWidth = 6;
           ctx.beginPath();
           ctx.moveTo(1, 1);
-          ctx.lineTo(1, 256);
+          ctx.lineTo(1, 255);
           ctx.stroke();
           ctx.lineWidth = 6;
           ctx.beginPath();
           ctx.moveTo(1, 1);
-          ctx.lineTo(256, 1);
+          ctx.lineTo(255, 1);
           ctx.stroke();
           ctx.restore();
         }
