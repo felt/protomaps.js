@@ -16,6 +16,7 @@ import { light } from "../default_style/light";
 import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
+import { PickedFeature } from "../tilecache";
 
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
@@ -329,6 +330,42 @@ const leafletLayer = (options: any): any => {
           sourceName,
           view.queryFeatures(lng, lat, this._map.getZoom())
         );
+      }
+      return featuresBySourceName;
+    }
+
+    public queryRenderedFeatures(lng: number, lat: number) {
+      let featuresBySourceName = new Map();
+      for (var [sourceName, view] of this.views) {
+        const z = this._map.getZoom();
+        const viewFeatures = view.queryFeatures(lng, lat, z);
+        const featuresPerLayer = viewFeatures.reduce(
+          (agg: { [key: string]: PickedFeature[] }, f: PickedFeature) => {
+            if (!agg[f.layerName]) agg[f.layerName] = [];
+            agg[f.layerName].push(f);
+            return agg;
+          },
+          {}
+        );
+        const features: PickedFeature[] = [];
+        for (let rule of this.paint_rules) {
+          if (rule.minzoom && z < rule.minzoom) continue;
+          if (rule.maxzoom && z > rule.maxzoom) continue;
+
+          const layerFeatures = featuresPerLayer[rule.dataLayer];
+          if (!layerFeatures) continue;
+
+          if (rule.filter) {
+            for (let pickedFeature of layerFeatures) {
+              if (rule.filter(z, pickedFeature.feature)) {
+                features.push(pickedFeature);
+              }
+            }
+          } else {
+            features.push(...layerFeatures);
+          }
+        }
+        featuresBySourceName.set(sourceName, features);
       }
       return featuresBySourceName;
     }

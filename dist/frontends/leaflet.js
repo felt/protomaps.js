@@ -228,6 +228,41 @@ const leafletLayer = (options) => {
             }
             return featuresBySourceName;
         }
+        queryRenderedFeatures(lng, lat) {
+            let featuresBySourceName = new Map();
+            for (var [sourceName, view] of this.views) {
+                const z = this._map.getZoom();
+                const viewFeatures = view.queryFeatures(lng, lat, z);
+                const featuresPerLayer = viewFeatures.reduce((agg, f) => {
+                    if (!agg[f.layerName])
+                        agg[f.layerName] = [];
+                    agg[f.layerName].push(f);
+                    return agg;
+                }, {});
+                const features = [];
+                for (let rule of this.paint_rules) {
+                    if (rule.minzoom && z < rule.minzoom)
+                        continue;
+                    if (rule.maxzoom && z > rule.maxzoom)
+                        continue;
+                    const layerFeatures = featuresPerLayer[rule.dataLayer];
+                    if (!layerFeatures)
+                        continue;
+                    if (rule.filter) {
+                        for (let pickedFeature of layerFeatures) {
+                            if (rule.filter(z, pickedFeature.feature)) {
+                                features.push(pickedFeature);
+                            }
+                        }
+                    }
+                    else {
+                        features.push(...layerFeatures);
+                    }
+                }
+                featuresBySourceName.set(sourceName, features);
+            }
+            return featuresBySourceName;
+        }
         inspect(layer) {
             return (ev) => {
                 let typeGlyphs = ["◎", "⟍", "◻"];

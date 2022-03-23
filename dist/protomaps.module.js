@@ -4948,6 +4948,40 @@ var leafletLayer = (options) => {
       }
       return featuresBySourceName;
     }
+    queryRenderedFeatures(lng, lat) {
+      let featuresBySourceName = new Map();
+      for (var [sourceName, view] of this.views) {
+        const z2 = this._map.getZoom();
+        const viewFeatures = view.queryFeatures(lng, lat, z2);
+        const featuresPerLayer = viewFeatures.reduce((agg, f2) => {
+          if (!agg[f2.layerName])
+            agg[f2.layerName] = [];
+          agg[f2.layerName].push(f2);
+          return agg;
+        }, {});
+        const features = [];
+        for (let rule of this.paint_rules) {
+          if (rule.minzoom && z2 < rule.minzoom)
+            continue;
+          if (rule.maxzoom && z2 > rule.maxzoom)
+            continue;
+          const layerFeatures = featuresPerLayer[rule.dataLayer];
+          if (!layerFeatures)
+            continue;
+          if (rule.filter) {
+            for (let pickedFeature of layerFeatures) {
+              if (rule.filter(z2, pickedFeature.feature)) {
+                features.push(pickedFeature);
+              }
+            }
+          } else {
+            features.push(...layerFeatures);
+          }
+        }
+        featuresBySourceName.set(sourceName, features);
+      }
+      return featuresBySourceName;
+    }
     inspect(layer) {
       return (ev) => {
         let typeGlyphs = ["\u25CE", "\u27CD", "\u25FB"];
