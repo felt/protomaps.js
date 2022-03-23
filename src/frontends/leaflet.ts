@@ -249,13 +249,13 @@ const leafletLayer = (options: any): any => {
         }
         ctx.strokeStyle = this.debug;
 
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(0, 256);
         ctx.stroke();
 
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(256, 0);

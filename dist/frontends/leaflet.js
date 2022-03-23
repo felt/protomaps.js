@@ -160,12 +160,12 @@ const leafletLayer = (options) => {
                         ctx.fillText(layout_time.toFixed() + " ms layout", 4, 56);
                     }
                     ctx.strokeStyle = this.debug;
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 6;
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.lineTo(0, 256);
                     ctx.stroke();
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 6;
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.lineTo(256, 0);
