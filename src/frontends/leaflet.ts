@@ -244,14 +244,14 @@ const leafletLayer = (options: any): any => {
 
         ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.moveTo(1, 1);
-        ctx.lineTo(1, 255);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 256);
         ctx.stroke();
 
         ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.moveTo(1, 1);
-        ctx.lineTo(255, 1);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(256, 0);
         ctx.stroke();
 
         ctx.restore();
