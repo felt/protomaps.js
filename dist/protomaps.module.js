@@ -4880,15 +4880,15 @@ var leafletLayer = (options) => {
             ctx.fillText(layout_time.toFixed() + " ms layout", 4, 56);
           }
           ctx.strokeStyle = this.debug;
-          ctx.lineWidth = 0.5;
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.moveTo(1, 1);
-          ctx.lineTo(1, 255);
+          ctx.moveTo(0, 0);
+          ctx.lineTo(0, 256);
           ctx.stroke();
-          ctx.lineWidth = 0.5;
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.moveTo(1, 1);
-          ctx.lineTo(255, 1);
+          ctx.moveTo(0, 0);
+          ctx.lineTo(256, 0);
           ctx.stroke();
           ctx.restore();
         }
