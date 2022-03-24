@@ -18,6 +18,8 @@ import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { PickedFeature } from "../tilecache";
 
+const LeafletTileSize = 258;
+
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
     setTimeout(() => {
@@ -97,7 +99,7 @@ const leafletLayer = (options: any): any => {
         16,
         this.onTilesInvalidated
       );
-      this.tile_size = 256 * window.devicePixelRatio;
+      this.tile_size = LeafletTileSize * window.devicePixelRatio;
       this.tileDelay = options.tileDelay || 3;
       this.lang = options.lang;
 
@@ -184,18 +186,25 @@ const leafletLayer = (options: any): any => {
         maxX: 256 * (coords.x + 1) + BUF,
         maxY: 256 * (coords.y + 1) + BUF,
       };
-      let origin = new Point(256 * coords.x, 256 * coords.y);
+      let origin = new Point(256 * coords.x + 0.5, 256 * coords.y + 0.5);
 
       element.width = this.tile_size;
       element.height = this.tile_size;
       let ctx = element.getContext("2d");
-      ctx.setTransform(this.tile_size / 256, 0, 0, this.tile_size / 256, 0, 0);
-      ctx.clearRect(0, 0, 256, 256);
+      ctx.setTransform(
+        this.tile_size / LeafletTileSize,
+        0,
+        0,
+        this.tile_size / LeafletTileSize,
+        0,
+        0
+      );
+      ctx.clearRect(0, 0, LeafletTileSize, LeafletTileSize);
 
       if (this.backgroundColor) {
         ctx.save();
         ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillRect(0, 0, LeafletTileSize, LeafletTileSize);
         ctx.restore();
       }
 
@@ -240,13 +249,13 @@ const leafletLayer = (options: any): any => {
         }
         ctx.strokeStyle = this.debug;
 
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(0, 256);
         ctx.stroke();
 
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 6;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(256, 0);

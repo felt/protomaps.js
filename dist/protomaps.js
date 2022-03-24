@@ -4815,6 +4815,7 @@ var protomaps = (() => {
   };
 
   // src/frontends/leaflet.ts
+  var LeafletTileSize = 258;
   var timer = (duration) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -4857,7 +4858,7 @@ var protomaps = (() => {
           });
         };
         this.labelers = new Labelers(this.scratch, this.label_rules, 16, this.onTilesInvalidated);
-        this.tile_size = 256 * window.devicePixelRatio;
+        this.tile_size = LeafletTileSize * window.devicePixelRatio;
         this.tileDelay = options2.tileDelay || 3;
         this.lang = options2.lang;
         this.inspector = this.inspect(this);
@@ -4921,16 +4922,16 @@ var protomaps = (() => {
             maxX: 256 * (coords.x + 1) + BUF,
             maxY: 256 * (coords.y + 1) + BUF
           };
-          let origin = new import_point_geometry7.default(256 * coords.x, 256 * coords.y);
+          let origin = new import_point_geometry7.default(256 * coords.x + 0.5, 256 * coords.y + 0.5);
           element.width = this.tile_size;
           element.height = this.tile_size;
           let ctx = element.getContext("2d");
-          ctx.setTransform(this.tile_size / 256, 0, 0, this.tile_size / 256, 0, 0);
-          ctx.clearRect(0, 0, 256, 256);
+          ctx.setTransform(this.tile_size / LeafletTileSize, 0, 0, this.tile_size / LeafletTileSize, 0, 0);
+          ctx.clearRect(0, 0, LeafletTileSize, LeafletTileSize);
           if (this.backgroundColor) {
             ctx.save();
             ctx.fillStyle = this.backgroundColor;
-            ctx.fillRect(0, 0, 256, 256);
+            ctx.fillRect(0, 0, LeafletTileSize, LeafletTileSize);
             ctx.restore();
           }
           var painting_time = 0;
@@ -4954,12 +4955,12 @@ var protomaps = (() => {
               ctx.fillText(layout_time.toFixed() + " ms layout", 4, 56);
             }
             ctx.strokeStyle = this.debug;
-            ctx.lineWidth = 0.5;
+            ctx.lineWidth = 6;
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(0, 256);
             ctx.stroke();
-            ctx.lineWidth = 0.5;
+            ctx.lineWidth = 6;
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(256, 0);
