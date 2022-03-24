@@ -18,7 +18,7 @@ import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { PickedFeature } from "../tilecache";
 
-const LeafletTileSize = 258;
+const LeafletTileSize = 256;
 
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
