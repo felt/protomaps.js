@@ -325,7 +325,9 @@ const leafletLayer = (options) => {
                     console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
                 this.views.set(d.name, sourceToView(d.options));
                 this.paint_rules = this.paint_rules.concat(d.paintRules);
-                dataLabelRules.push(...d.labelRules);
+                // We want top layer labels to be shown first so we need to reverse label rules
+                // order
+                dataLabelRules.unshift(...d.labelRules);
             });
             if (dataLabelRules.length !== 0) {
                 this.label_rules = dataLabelsOnTop
