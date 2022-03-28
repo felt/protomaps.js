@@ -5030,7 +5030,7 @@ var leafletLayer = (options) => {
           console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
         this.views.set(d.name, sourceToView(d.options));
         this.paint_rules = this.paint_rules.concat(d.paintRules);
-        dataLabelRules.push(...d.labelRules);
+        dataLabelRules.unshift(...d.labelRules);
       });
       if (dataLabelRules.length !== 0) {
         this.label_rules = dataLabelsOnTop ? dataLabelRules.concat(this.label_rules) : this.label_rules.concat(dataLabelRules);
