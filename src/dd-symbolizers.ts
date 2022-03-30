@@ -6,7 +6,7 @@ import { Justify, LabelSymbolizer, TextSymbolizer } from "./symbolizer";
 import { NumberAttr } from "./attribute";
 import { Label, Layout } from "./labeler";
 
-export enum TextPlacements {
+export const enum TextPlacements {
   N = 1,
   NE = 2,
   E = 3,

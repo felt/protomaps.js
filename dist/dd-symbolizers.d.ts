@@ -2,7 +2,7 @@ import Point from "@mapbox/point-geometry";
 import { Feature } from "./tilecache";
 import { Justify, LabelSymbolizer, TextSymbolizer } from "./symbolizer";
 import { Label, Layout } from "./labeler";
-export declare enum TextPlacements {
+export declare const enum TextPlacements {
     N = 1,
     NE = 2,
     E = 3,
