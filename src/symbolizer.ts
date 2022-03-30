@@ -39,7 +39,7 @@ export interface PaintSymbolizer {
   ): void;
 }
 
-export enum Justify {
+export const enum Justify {
   Left = 1,
   Center = 2,
   Right = 3,
@@ -942,7 +942,7 @@ export class OffsetTextSymbolizer implements LabelSymbolizer {
   }
 }
 
-export enum LineLabelPlacement {
+export const enum LineLabelPlacement {
   Above = 1,
   Center = 2,
   Below = 3,

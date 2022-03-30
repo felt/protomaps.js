@@ -2,7 +2,7 @@
 import Point from "@mapbox/point-geometry";
 import { GeomType } from "./tilecache";
 // @ts-ignore
-import { Justify, TextSymbolizer } from "./symbolizer";
+import { TextSymbolizer } from "./symbolizer";
 export class DataDrivenOffsetSymbolizer {
     constructor(symbolizer, options) {
         this.getBbox = (anchor, bbOrigin, firstLabelBbox) => {
@@ -108,10 +108,10 @@ export class DataDrivenOffsetSymbolizer {
         if (fixedJustify)
             return fixedJustify;
         if ([1 /* N */, 5 /* S */].includes(placement))
-            return Justify.Center;
+            return 2 /* Center */;
         if ([2 /* NE */, 3 /* E */, 4 /* SE */].includes(placement))
-            return Justify.Left;
-        return Justify.Right;
+            return 1 /* Left */;
+        return 3 /* Right */;
     }
 }
 export class DataDrivenOffsetTextSymbolizer {

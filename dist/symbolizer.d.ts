@@ -15,7 +15,7 @@ export interface PaintSymbolizer {
     draw?(ctx: any, geom: Point[][], z: number, feature: Feature): void;
     drawGrouped?(ctx: any, z: number, features: Feature[], inside: ClippingFunction, transformFunction: TransformFunction, filterFunction: FilterFunction): void;
 }
-export declare enum Justify {
+export declare const enum Justify {
     Left = 1,
     Center = 2,
     Right = 3
@@ -223,7 +223,7 @@ export declare class OffsetTextSymbolizer implements LabelSymbolizer {
     constructor(options: any);
     place(layout: Layout, geom: Point[][], feature: Feature): Label[] | undefined;
 }
-export declare enum LineLabelPlacement {
+export declare const enum LineLabelPlacement {
     Above = 1,
     Center = 2,
     Below = 3

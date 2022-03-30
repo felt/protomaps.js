@@ -9,12 +9,6 @@ import { linebreak } from "./text";
 import { lineCells, simpleLabel } from "./line";
 // https://bugs.webkit.org/show_bug.cgi?id=230751
 export const MAX_VERTICES_PER_DRAW_CALL = 4000;
-export var Justify;
-(function (Justify) {
-    Justify[Justify["Left"] = 1] = "Left";
-    Justify[Justify["Center"] = 2] = "Center";
-    Justify[Justify["Right"] = 3] = "Right";
-})(Justify || (Justify = {}));
 export const createPattern = (width, height, fn) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -537,7 +531,7 @@ export class CenteredSymbolizer {
         };
         let draw = (ctx) => {
             ctx.translate(-width / 2, height / 2 - bbox.maxY);
-            first_label.draw(ctx, { justify: Justify.Center });
+            first_label.draw(ctx, { justify: 2 /* Center */ });
         };
         return [{ anchor: a, bboxes: [centered], draw: draw }];
     }
@@ -614,12 +608,12 @@ export class TextSymbolizer {
             var y = 0;
             for (let line of lines) {
                 var startX = 0;
-                if (this.justify == Justify.Center ||
-                    (extra && extra.justify == Justify.Center)) {
+                if (this.justify == 2 /* Center */ ||
+                    (extra && extra.justify == 2 /* Center */)) {
                     startX = (width - ctx.measureText(line).width) / 2;
                 }
-                else if (this.justify == Justify.Right ||
-                    (extra && extra.justify == Justify.Right)) {
+                else if (this.justify == 3 /* Right */ ||
+                    (extra && extra.justify == 3 /* Right */)) {
                     startX = width - ctx.measureText(line).width;
                 }
                 if (textStrokeWidth) {
@@ -691,25 +685,25 @@ export class OffsetSymbolizer {
         };
         // NE
         var bbox = getBbox(anchor, origin);
-        justify = Justify.Left;
+        justify = 1 /* Left */;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // SW
         origin = new Point(-offset - fb.maxX, offset - fb.minY);
         bbox = getBbox(anchor, origin);
-        justify = Justify.Right;
+        justify = 3 /* Right */;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // NW
         origin = new Point(-offset - fb.maxX, -offset);
         bbox = getBbox(anchor, origin);
-        justify = Justify.Right;
+        justify = 3 /* Right */;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // SE
         origin = new Point(-offset - fb.maxX, offset - fb.minY);
         bbox = getBbox(anchor, origin);
-        justify = Justify.Left;
+        justify = 1 /* Left */;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         return undefined;
@@ -723,12 +717,6 @@ export class OffsetTextSymbolizer {
         return this.symbolizer.place(layout, geom, feature);
     }
 }
-export var LineLabelPlacement;
-(function (LineLabelPlacement) {
-    LineLabelPlacement[LineLabelPlacement["Above"] = 1] = "Above";
-    LineLabelPlacement[LineLabelPlacement["Center"] = 2] = "Center";
-    LineLabelPlacement[LineLabelPlacement["Below"] = 3] = "Below";
-})(LineLabelPlacement || (LineLabelPlacement = {}));
 export class LineLabelSymbolizer {
     constructor(options) {
         this.font = new FontAttr(options);
@@ -737,7 +725,7 @@ export class LineLabelSymbolizer {
         this.stroke = new StringAttr(options.stroke, "black");
         this.width = new NumberAttr(options.width, 0);
         this.offset = new NumberAttr(options.offset, 0);
-        this.position = options.position || LineLabelPlacement.Above;
+        this.position = options.position || 1 /* Above */;
         this.maxLabelCodeUnits = new NumberAttr(options.maxLabelChars, 40);
         this.repeatDistance = new NumberAttr(options.repeatDistance, 250);
     }
@@ -785,9 +773,9 @@ export class LineLabelSymbolizer {
                 // ctx.strokeStyle = "red";
                 // ctx.stroke();
                 let heightPlacement = 0;
-                if (this.position === LineLabelPlacement.Below)
+                if (this.position === 3 /* Below */)
                     heightPlacement = height;
-                else if (this.position === LineLabelPlacement.Center)
+                else if (this.position === 2 /* Center */)
                     heightPlacement = height / 2;
                 // Compute the angle between the positive X axis and
                 // the point (dx, -dy). Notice that we need to change
