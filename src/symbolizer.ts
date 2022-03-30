@@ -39,7 +39,7 @@ export interface PaintSymbolizer {
   ): void;
 }
 
-export const enum Justify {
+export enum Justify {
   Left = 1,
   Center = 2,
   Right = 3,

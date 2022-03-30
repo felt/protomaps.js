@@ -2,7 +2,7 @@
 import Point from "@mapbox/point-geometry";
 import { GeomType } from "./tilecache";
 // @ts-ignore
-import { TextSymbolizer } from "./symbolizer";
+import { Justify, TextSymbolizer } from "./symbolizer";
 export var TextPlacements;
 (function (TextPlacements) {
     TextPlacements[TextPlacements["N"] = 1] = "N";
@@ -119,10 +119,10 @@ export class DataDrivenOffsetSymbolizer {
         if (fixedJustify)
             return fixedJustify;
         if ([TextPlacements.N, TextPlacements.S].includes(placement))
-            return 2 /* Center */;
+            return Justify.Center;
         if ([TextPlacements.NE, TextPlacements.E, TextPlacements.SE].includes(placement))
-            return 1 /* Left */;
-        return 3 /* Right */;
+            return Justify.Left;
+        return Justify.Right;
     }
 }
 export class DataDrivenOffsetTextSymbolizer {

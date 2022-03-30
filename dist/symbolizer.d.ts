@@ -15,7 +15,7 @@ export interface PaintSymbolizer {
     draw?(ctx: any, geom: Point[][], z: number, feature: Feature): void;
     drawGrouped?(ctx: any, z: number, features: Feature[], inside: ClippingFunction, transformFunction: TransformFunction, filterFunction: FilterFunction): void;
 }
-export declare const enum Justify {
+export declare enum Justify {
     Left = 1,
     Center = 2,
     Right = 3

@@ -9,6 +9,12 @@ import { linebreak } from "./text";
 import { lineCells, simpleLabel } from "./line";
 // https://bugs.webkit.org/show_bug.cgi?id=230751
 export const MAX_VERTICES_PER_DRAW_CALL = 4000;
+export var Justify;
+(function (Justify) {
+    Justify[Justify["Left"] = 1] = "Left";
+    Justify[Justify["Center"] = 2] = "Center";
+    Justify[Justify["Right"] = 3] = "Right";
+})(Justify || (Justify = {}));
 export const createPattern = (width, height, fn) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -531,7 +537,7 @@ export class CenteredSymbolizer {
         };
         let draw = (ctx) => {
             ctx.translate(-width / 2, height / 2 - bbox.maxY);
-            first_label.draw(ctx, { justify: 2 /* Center */ });
+            first_label.draw(ctx, { justify: Justify.Center });
         };
         return [{ anchor: a, bboxes: [centered], draw: draw }];
     }
@@ -608,12 +614,12 @@ export class TextSymbolizer {
             var y = 0;
             for (let line of lines) {
                 var startX = 0;
-                if (this.justify == 2 /* Center */ ||
-                    (extra && extra.justify == 2 /* Center */)) {
+                if (this.justify == Justify.Center ||
+                    (extra && extra.justify == Justify.Center)) {
                     startX = (width - ctx.measureText(line).width) / 2;
                 }
-                else if (this.justify == 3 /* Right */ ||
-                    (extra && extra.justify == 3 /* Right */)) {
+                else if (this.justify == Justify.Right ||
+                    (extra && extra.justify == Justify.Right)) {
                     startX = width - ctx.measureText(line).width;
                 }
                 if (textStrokeWidth) {
@@ -685,25 +691,25 @@ export class OffsetSymbolizer {
         };
         // NE
         var bbox = getBbox(anchor, origin);
-        justify = 1 /* Left */;
+        justify = Justify.Left;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // SW
         origin = new Point(-offset - fb.maxX, offset - fb.minY);
         bbox = getBbox(anchor, origin);
-        justify = 3 /* Right */;
+        justify = Justify.Right;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // NW
         origin = new Point(-offset - fb.maxX, -offset);
         bbox = getBbox(anchor, origin);
-        justify = 3 /* Right */;
+        justify = Justify.Right;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         // SE
         origin = new Point(-offset - fb.maxX, offset - fb.minY);
         bbox = getBbox(anchor, origin);
-        justify = 1 /* Left */;
+        justify = Justify.Left;
         if (!layout.index.bboxCollides(bbox, layout.order))
             return [{ anchor: anchor, bboxes: [bbox], draw: draw }];
         return undefined;
