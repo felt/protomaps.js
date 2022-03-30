@@ -717,6 +717,12 @@ export class OffsetTextSymbolizer {
         return this.symbolizer.place(layout, geom, feature);
     }
 }
+export var LineLabelPlacement;
+(function (LineLabelPlacement) {
+    LineLabelPlacement[LineLabelPlacement["Above"] = 1] = "Above";
+    LineLabelPlacement[LineLabelPlacement["Center"] = 2] = "Center";
+    LineLabelPlacement[LineLabelPlacement["Below"] = 3] = "Below";
+})(LineLabelPlacement || (LineLabelPlacement = {}));
 export class LineLabelSymbolizer {
     constructor(options) {
         this.font = new FontAttr(options);
@@ -725,7 +731,7 @@ export class LineLabelSymbolizer {
         this.stroke = new StringAttr(options.stroke, "black");
         this.width = new NumberAttr(options.width, 0);
         this.offset = new NumberAttr(options.offset, 0);
-        this.position = options.position || 1 /* Above */;
+        this.position = options.position || LineLabelPlacement.Above;
         this.maxLabelCodeUnits = new NumberAttr(options.maxLabelChars, 40);
         this.repeatDistance = new NumberAttr(options.repeatDistance, 250);
     }
@@ -773,9 +779,9 @@ export class LineLabelSymbolizer {
                 // ctx.strokeStyle = "red";
                 // ctx.stroke();
                 let heightPlacement = 0;
-                if (this.position === 3 /* Below */)
+                if (this.position === LineLabelPlacement.Below)
                     heightPlacement = height;
-                else if (this.position === 2 /* Center */)
+                else if (this.position === LineLabelPlacement.Center)
                     heightPlacement = height / 2;
                 // Compute the angle between the positive X axis and
                 // the point (dx, -dy). Notice that we need to change

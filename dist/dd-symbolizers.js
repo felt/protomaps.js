@@ -3,6 +3,17 @@ import Point from "@mapbox/point-geometry";
 import { GeomType } from "./tilecache";
 // @ts-ignore
 import { TextSymbolizer } from "./symbolizer";
+export var TextPlacements;
+(function (TextPlacements) {
+    TextPlacements[TextPlacements["N"] = 1] = "N";
+    TextPlacements[TextPlacements["NE"] = 2] = "NE";
+    TextPlacements[TextPlacements["E"] = 3] = "E";
+    TextPlacements[TextPlacements["SE"] = 4] = "SE";
+    TextPlacements[TextPlacements["S"] = 5] = "S";
+    TextPlacements[TextPlacements["SW"] = 6] = "SW";
+    TextPlacements[TextPlacements["W"] = 7] = "W";
+    TextPlacements[TextPlacements["NW"] = 8] = "NW";
+})(TextPlacements || (TextPlacements = {}));
 export class DataDrivenOffsetSymbolizer {
     constructor(symbolizer, options) {
         this.getBbox = (anchor, bbOrigin, firstLabelBbox) => {
@@ -17,14 +28,14 @@ export class DataDrivenOffsetSymbolizer {
         this.offsetX = options.offsetX || 0;
         this.offsetY = options.offsetY || 0;
         this.placements = options.placements || [
-            2 /* NE */,
-            6 /* SW */,
-            8 /* NW */,
-            4 /* SE */,
-            1 /* N */,
-            5 /* S */,
-            3 /* E */,
-            7 /* W */,
+            TextPlacements.NE,
+            TextPlacements.SW,
+            TextPlacements.NW,
+            TextPlacements.SE,
+            TextPlacements.N,
+            TextPlacements.S,
+            TextPlacements.E,
+            TextPlacements.W,
         ];
         this.attrs =
             options.attrs ||
@@ -86,9 +97,9 @@ export class DataDrivenOffsetSymbolizer {
     computeXAxisOffset(offsetX, fb, placement) {
         const labelWidth = fb.maxX;
         const labelHalfWidth = labelWidth / 2;
-        if ([1 /* N */, 5 /* S */].includes(placement))
+        if ([TextPlacements.N, TextPlacements.S].includes(placement))
             return offsetX - labelHalfWidth;
-        if ([8 /* NW */, 7 /* W */, 6 /* SW */].includes(placement))
+        if ([TextPlacements.NW, TextPlacements.W, TextPlacements.SW].includes(placement))
             return -offsetX - labelWidth;
         return offsetX;
     }
@@ -96,20 +107,20 @@ export class DataDrivenOffsetSymbolizer {
         const labelHalfHeight = Math.abs(fb.minY);
         const labelBottom = fb.maxY;
         const labelCenterHeight = (fb.minY + fb.maxY) / 2;
-        if ([3 /* E */, 7 /* W */].includes(placement))
+        if ([TextPlacements.E, TextPlacements.W].includes(placement))
             return offsetY - labelCenterHeight;
-        if ([8 /* NW */, 2 /* NE */, 1 /* N */].includes(placement))
+        if ([TextPlacements.NW, TextPlacements.NE, TextPlacements.N].includes(placement))
             return -offsetY - labelBottom;
-        if ([6 /* SW */, 4 /* SE */, 5 /* S */].includes(placement))
+        if ([TextPlacements.SW, TextPlacements.SE, TextPlacements.S].includes(placement))
             return offsetY + labelHalfHeight;
         return offsetY;
     }
     computeJustify(fixedJustify, placement) {
         if (fixedJustify)
             return fixedJustify;
-        if ([1 /* N */, 5 /* S */].includes(placement))
+        if ([TextPlacements.N, TextPlacements.S].includes(placement))
             return 2 /* Center */;
-        if ([2 /* NE */, 3 /* E */, 4 /* SE */].includes(placement))
+        if ([TextPlacements.NE, TextPlacements.E, TextPlacements.SE].includes(placement))
             return 1 /* Left */;
         return 3 /* Right */;
     }

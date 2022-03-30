@@ -223,7 +223,7 @@ export declare class OffsetTextSymbolizer implements LabelSymbolizer {
     constructor(options: any);
     place(layout: Layout, geom: Point[][], feature: Feature): Label[] | undefined;
 }
-export declare const enum LineLabelPlacement {
+export declare enum LineLabelPlacement {
     Above = 1,
     Center = 2,
     Below = 3

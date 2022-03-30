@@ -942,7 +942,7 @@ export class OffsetTextSymbolizer implements LabelSymbolizer {
   }
 }
 
-export const enum LineLabelPlacement {
+export enum LineLabelPlacement {
   Above = 1,
   Center = 2,
   Below = 3,
