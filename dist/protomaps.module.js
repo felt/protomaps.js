@@ -3393,18 +3393,28 @@ var TileCache = class {
       };
       for (let [layer_name, layer_arr] of entry.data.entries()) {
         for (let feature of layer_arr) {
+          let intersectedFeature;
           if (feature.geomType == 1) {
             if (pointMinDistToPoints(center, feature.geom) < brushSize) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
           } else if (feature.geomType == 2) {
             if (pointMinDistToLines(center, feature.geom) < brushSize) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
           } else {
             if (pointInPolygon(center, feature.geom)) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
+          }
+          if (intersectedFeature) {
+            retval.push({
+              feature: intersectedFeature,
+              layerName: layer_name,
+              tileX: tile_x,
+              tileY: tile_y,
+              zoom
+            });
           }
         }
       }

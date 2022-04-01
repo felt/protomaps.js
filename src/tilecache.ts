@@ -339,6 +339,9 @@ export function pointMinDistToLines(point: Point, geom: Point[][]): number {
 export interface PickedFeature {
   feature: Feature;
   layerName: string;
+  tileX: number;
+  tileY: number;
+  zoom: number;
 }
 
 export class TileCache {
@@ -385,18 +388,28 @@ export class TileCache {
           //      (query_bbox.maxY >= feature.bbox.minY && feature.bbox.maxY >= query_bbox.minY)) {
           //  }
 
+          let intersectedFeature;
           if (feature.geomType == GeomType.Point) {
             if (pointMinDistToPoints(center, feature.geom) < brushSize) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
           } else if (feature.geomType == GeomType.Line) {
             if (pointMinDistToLines(center, feature.geom) < brushSize) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
           } else {
             if (pointInPolygon(center, feature.geom)) {
-              retval.push({ feature, layerName: layer_name });
+              intersectedFeature = feature;
             }
+          }
+          if (intersectedFeature) {
+            retval.push({
+              feature: intersectedFeature,
+              layerName: layer_name,
+              tileX: tile_x,
+              tileY: tile_y,
+              zoom,
+            });
           }
         }
       }

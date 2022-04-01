@@ -315,20 +315,30 @@ export class TileCache {
                     //  if ((query_bbox.maxX >= feature.bbox.minX && feature.bbox.maxX >= query_bbox.minX) &&
                     //      (query_bbox.maxY >= feature.bbox.minY && feature.bbox.maxY >= query_bbox.minY)) {
                     //  }
+                    let intersectedFeature;
                     if (feature.geomType == GeomType.Point) {
                         if (pointMinDistToPoints(center, feature.geom) < brushSize) {
-                            retval.push({ feature, layerName: layer_name });
+                            intersectedFeature = feature;
                         }
                     }
                     else if (feature.geomType == GeomType.Line) {
                         if (pointMinDistToLines(center, feature.geom) < brushSize) {
-                            retval.push({ feature, layerName: layer_name });
+                            intersectedFeature = feature;
                         }
                     }
                     else {
                         if (pointInPolygon(center, feature.geom)) {
-                            retval.push({ feature, layerName: layer_name });
+                            intersectedFeature = feature;
                         }
+                    }
+                    if (intersectedFeature) {
+                        retval.push({
+                            feature: intersectedFeature,
+                            layerName: layer_name,
+                            tileX: tile_x,
+                            tileY: tile_y,
+                            zoom,
+                        });
                     }
                 }
             }
