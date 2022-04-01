@@ -53,6 +53,9 @@ export declare function pointMinDistToLines(point: Point, geom: Point[][]): numb
 export interface PickedFeature {
     feature: Feature;
     layerName: string;
+    tileX: number;
+    tileY: number;
+    zoom: number;
 }
 export declare class TileCache {
     source: TileSource;
