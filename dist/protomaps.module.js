@@ -2188,7 +2188,7 @@ var PolygonSymbolizer = class {
         vertices_in_path = 0;
         ctx.beginPath();
       }
-      for (var p2 = 0; p2 < poly.length - 1; p2++) {
+      for (var p2 = 0; p2 < poly.length; p2++) {
         let pt = poly[p2];
         if (p2 == 0)
           ctx.moveTo(pt.x, pt.y);
