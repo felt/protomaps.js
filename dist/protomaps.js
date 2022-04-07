@@ -5103,8 +5103,8 @@ var protomaps = (() => {
       }
       updateDataSources(dataSources, dataLabelsOnTop = false) {
         const dataLabelRules = [];
-        this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource);
-        this.label_rules = this.label_rules.filter((r2) => !r2.dataSource);
+        this.paint_rules = [];
+        this.label_rules = [];
         this.views.forEach((_2, k) => {
           this.views.delete(k);
         });

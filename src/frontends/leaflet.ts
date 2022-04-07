@@ -444,10 +444,8 @@ const leafletLayer = (options: any): any => {
     ) {
       const dataLabelRules: LabelRule[] = [];
 
-      this.paint_rules = this.paint_rules.filter((r: Rule) => !r.dataSource);
-      this.label_rules = this.label_rules.filter(
-        (r: LabelRule) => !r.dataSource
-      );
+      this.paint_rules = [];
+      this.label_rules = [];
 
       this.views.forEach((_: View, k: string) => {
         this.views.delete(k);
