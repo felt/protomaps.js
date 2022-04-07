@@ -5028,16 +5028,12 @@ var leafletLayer = (options) => {
     }
     updateDataSources(dataSources, dataLabelsOnTop = false) {
       const dataLabelRules = [];
-      this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource || r2.dataSource === BasemapLayerSourceName);
-      this.label_rules = this.label_rules.filter((r2) => !r2.dataSource || r2.dataSource === BasemapLayerSourceName);
+      this.paint_rules = this.paint_rules.filter((r2) => !r2.dataSource);
+      this.label_rules = this.label_rules.filter((r2) => !r2.dataSource);
       this.views.forEach((_2, k) => {
-        if (k === BasemapLayerSourceName)
-          return;
         this.views.delete(k);
       });
       dataSources.forEach((d) => {
-        if (d.name === BasemapLayerSourceName)
-          console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
         this.views.set(d.name, sourceToView(d.options));
         this.paint_rules = this.paint_rules.concat(d.paintRules);
         dataLabelRules.unshift(...d.labelRules);

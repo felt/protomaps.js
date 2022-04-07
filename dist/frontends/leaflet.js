@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { BasemapLayerSourceName, sourcesToViews, sourceToView, } from "../view";
+import { sourcesToViews, sourceToView, } from "../view";
 import { painter } from "../painter";
 import { Labelers } from "../labeler";
 import { light } from "../default_style/light";
@@ -311,18 +311,12 @@ const leafletLayer = (options) => {
         }
         updateDataSources(dataSources, dataLabelsOnTop = false) {
             const dataLabelRules = [];
-            this.paint_rules = this.paint_rules.filter((r) => !r.dataSource || r.dataSource === BasemapLayerSourceName);
-            this.label_rules = this.label_rules.filter((r) => !r.dataSource || r.dataSource === BasemapLayerSourceName);
-            // As we want to keep the order set by dataSources, we first remove
-            // all non-basemap views and recreate with dataSources
+            this.paint_rules = this.paint_rules.filter((r) => !r.dataSource);
+            this.label_rules = this.label_rules.filter((r) => !r.dataSource);
             this.views.forEach((_, k) => {
-                if (k === BasemapLayerSourceName)
-                    return;
                 this.views.delete(k);
             });
             dataSources.forEach((d) => {
-                if (d.name === BasemapLayerSourceName)
-                    console.warn("Overwritting the basemap using updateDataSources will result in duplicated rules");
                 this.views.set(d.name, sourceToView(d.options));
                 this.paint_rules = this.paint_rules.concat(d.paintRules);
                 // We want top layer labels to be shown first so we need to reverse label rules
