@@ -444,24 +444,15 @@ const leafletLayer = (options: any): any => {
     ) {
       const dataLabelRules: LabelRule[] = [];
 
-      this.paint_rules = this.paint_rules.filter(
-        (r: Rule) => !r.dataSource || r.dataSource === BasemapLayerSourceName
-      );
+      this.paint_rules = this.paint_rules.filter((r: Rule) => !r.dataSource);
       this.label_rules = this.label_rules.filter(
-        (r: LabelRule) =>
-          !r.dataSource || r.dataSource === BasemapLayerSourceName
+        (r: LabelRule) => !r.dataSource
       );
-      // As we want to keep the order set by dataSources, we first remove
-      // all non-basemap views and recreate with dataSources
+
       this.views.forEach((_: View, k: string) => {
-        if (k === BasemapLayerSourceName) return;
         this.views.delete(k);
       });
       dataSources.forEach((d) => {
-        if (d.name === BasemapLayerSourceName)
-          console.warn(
-            "Overwritting the basemap using updateDataSources will result in duplicated rules"
-          );
         this.views.set(d.name, sourceToView(d.options));
         this.paint_rules = this.paint_rules.concat(d.paintRules);
         // We want top layer labels to be shown first so we need to reverse label rules
