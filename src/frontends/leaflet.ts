@@ -55,8 +55,6 @@ export type DataSourceOptions = {
 export type DataSource = {
   name: string;
   options: DataSourceOptions;
-  paintRules: Rule[];
-  labelRules: LabelRule[];
 };
 
 const leafletLayer = (options: any): any => {
@@ -440,29 +438,20 @@ const leafletLayer = (options: any): any => {
 
     public updateDataSources(
       dataSources: DataSource[],
-      dataLabelsOnTop = false
+      paintRules: Rule[],
+      labelRules: LabelRule[]
     ) {
       const dataLabelRules: LabelRule[] = [];
 
-      this.paint_rules = [];
-      this.label_rules = [];
+      this.paint_rules = [...paintRules];
+      this.label_rules = [...labelRules];
 
       this.views.forEach((_: View, k: string) => {
         this.views.delete(k);
       });
       dataSources.forEach((d) => {
         this.views.set(d.name, sourceToView(d.options));
-        this.paint_rules = this.paint_rules.concat(d.paintRules);
-        // We want top layer labels to be shown first so we need to reverse label rules
-        // order
-        dataLabelRules.unshift(...d.labelRules);
       });
-
-      if (dataLabelRules.length !== 0) {
-        this.label_rules = dataLabelsOnTop
-          ? dataLabelRules.concat(this.label_rules)
-          : this.label_rules.concat(dataLabelRules);
-      }
     }
 
     private subscribeChildEvents() {
