@@ -309,25 +309,16 @@ const leafletLayer = (options) => {
         removeInspector(map) {
             return map.off("click", this.inspector);
         }
-        updateDataSources(dataSources, dataLabelsOnTop = false) {
+        updateDataSources(dataSources, paintRules, labelRules) {
             const dataLabelRules = [];
-            this.paint_rules = [];
-            this.label_rules = [];
+            this.paint_rules = [...paintRules];
+            this.label_rules = [...labelRules];
             this.views.forEach((_, k) => {
                 this.views.delete(k);
             });
             dataSources.forEach((d) => {
                 this.views.set(d.name, sourceToView(d.options));
-                this.paint_rules = this.paint_rules.concat(d.paintRules);
-                // We want top layer labels to be shown first so we need to reverse label rules
-                // order
-                dataLabelRules.unshift(...d.labelRules);
             });
-            if (dataLabelRules.length !== 0) {
-                this.label_rules = dataLabelsOnTop
-                    ? dataLabelRules.concat(this.label_rules)
-                    : this.label_rules.concat(dataLabelRules);
-            }
         }
         subscribeChildEvents() {
             this.eventQueue.subscribe(ProtomapsEvent.TileFetchStart, this.fireEvent);

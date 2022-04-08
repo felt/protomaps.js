@@ -5101,21 +5101,16 @@ var protomaps = (() => {
       removeInspector(map) {
         return map.off("click", this.inspector);
       }
-      updateDataSources(dataSources, dataLabelsOnTop = false) {
+      updateDataSources(dataSources, paintRules2, labelRules2) {
         const dataLabelRules = [];
-        this.paint_rules = [];
-        this.label_rules = [];
+        this.paint_rules = [...paintRules2];
+        this.label_rules = [...labelRules2];
         this.views.forEach((_2, k) => {
           this.views.delete(k);
         });
         dataSources.forEach((d) => {
           this.views.set(d.name, sourceToView(d.options));
-          this.paint_rules = this.paint_rules.concat(d.paintRules);
-          dataLabelRules.unshift(...d.labelRules);
         });
-        if (dataLabelRules.length !== 0) {
-          this.label_rules = dataLabelsOnTop ? dataLabelRules.concat(this.label_rules) : this.label_rules.concat(dataLabelRules);
-        }
       }
       subscribeChildEvents() {
         this.eventQueue.subscribe(ProtomapsEvent.TileFetchStart, this.fireEvent);
