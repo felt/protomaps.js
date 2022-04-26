@@ -1,7 +1,9 @@
 var protomaps = (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getOwnPropSymbols = Object.getOwnPropertySymbols;
   var __getProtoOf = Object.getPrototypeOf;
@@ -19,6 +21,7 @@ var protomaps = (() => {
       }
     return a2;
   };
+  var __spreadProps = (a2, b) => __defProps(a2, __getOwnPropDescs(b));
   var __markAsModule = (target) => __defProp(target, "__esModule", { value: true });
   var __commonJS = (cb, mod) => function __require() {
     return mod || (0, cb[Object.keys(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
@@ -5057,11 +5060,15 @@ var protomaps = (() => {
             if (rule.filter) {
               for (let pickedFeature of layerFeatures) {
                 if (rule.filter(z2, pickedFeature.feature)) {
-                  features.push(pickedFeature);
+                  features.push(__spreadProps(__spreadValues({}, pickedFeature), {
+                    ruleName: rule.name
+                  }));
                 }
               }
             } else {
-              features.push(...layerFeatures);
+              features.push(...layerFeatures.map((f2) => {
+                return __spreadProps(__spreadValues({}, f2), { ruleName: rule.name });
+              }));
             }
           }
           featuresBySourceName.set(sourceName, features);

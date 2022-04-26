@@ -17,7 +17,6 @@ import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { PickedFeature } from "../tilecache";
-
 const LeafletTileSize = 256;
 
 const timer = (duration: number) => {
@@ -367,11 +366,18 @@ const leafletLayer = (options: any): any => {
           if (rule.filter) {
             for (let pickedFeature of layerFeatures) {
               if (rule.filter(z, pickedFeature.feature)) {
-                features.push(pickedFeature);
+                features.push({
+                  ...pickedFeature,
+                  ruleName: rule.name,
+                });
               }
             }
           } else {
-            features.push(...layerFeatures);
+            features.push(
+              ...layerFeatures.map((f: PickedFeature) => {
+                return { ...f, ruleName: rule.name };
+              })
+            );
           }
         }
         featuresBySourceName.set(sourceName, features);

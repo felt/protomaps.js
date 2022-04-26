@@ -254,12 +254,14 @@ const leafletLayer = (options) => {
                     if (rule.filter) {
                         for (let pickedFeature of layerFeatures) {
                             if (rule.filter(z, pickedFeature.feature)) {
-                                features.push(pickedFeature);
+                                features.push(Object.assign(Object.assign({}, pickedFeature), { ruleName: rule.name }));
                             }
                         }
                     }
                     else {
-                        features.push(...layerFeatures);
+                        features.push(...layerFeatures.map((f) => {
+                            return Object.assign(Object.assign({}, f), { ruleName: rule.name });
+                        }));
                     }
                 }
                 featuresBySourceName.set(sourceName, features);
