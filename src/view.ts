@@ -225,10 +225,15 @@ export class View {
     };
   }
 
-  public queryFeatures(lng: number, lat: number, display_zoom: number) {
+  public queryFeatures(
+    lng: number,
+    lat: number,
+    display_zoom: number,
+    brush_size_base = 16
+  ) {
     let rounded_zoom = Math.round(display_zoom);
     let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
-    let brush_size = 16 / (1 << (rounded_zoom - data_zoom));
+    let brush_size = brush_size_base / (1 << (rounded_zoom - data_zoom));
     return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
   }
 }
