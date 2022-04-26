@@ -5103,13 +5103,21 @@ var protomaps = (() => {
       }
       updateDataSources(dataSources, paintRules2, labelRules2) {
         const dataLabelRules = [];
+        const dataSourcesPerName = dataSources.reduce((agg, source) => {
+          agg[source.name] = source;
+          return agg;
+        }, {});
         this.paint_rules = [...paintRules2];
         this.label_rules = [...labelRules2];
         this.views.forEach((_2, k) => {
-          this.views.delete(k);
+          if (!dataSourcesPerName[k]) {
+            this.views.delete(k);
+          }
         });
         dataSources.forEach((d) => {
-          this.views.set(d.name, sourceToView(d.options));
+          if (!this.views.has(d.name)) {
+            this.views.set(d.name, sourceToView(d.options));
+          }
         });
       }
       subscribeChildEvents() {

@@ -442,15 +442,26 @@ const leafletLayer = (options: any): any => {
       labelRules: LabelRule[]
     ) {
       const dataLabelRules: LabelRule[] = [];
+      const dataSourcesPerName = dataSources.reduce(
+        (agg: { [key: string]: DataSource }, source) => {
+          agg[source.name] = source;
+          return agg;
+        },
+        {}
+      );
 
       this.paint_rules = [...paintRules];
       this.label_rules = [...labelRules];
 
       this.views.forEach((_: View, k: string) => {
-        this.views.delete(k);
+        if (!dataSourcesPerName[k]) {
+          this.views.delete(k);
+        }
       });
       dataSources.forEach((d) => {
-        this.views.set(d.name, sourceToView(d.options));
+        if (!this.views.has(d.name)) {
+          this.views.set(d.name, sourceToView(d.options));
+        }
       });
     }
 
