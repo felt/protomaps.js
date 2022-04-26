@@ -23,6 +23,7 @@ export interface Rule {
   dataLayer: string;
   symbolizer: PaintSymbolizer;
   filter?: Filter;
+  name?: string;
 }
 
 const isFeatureInTile = (

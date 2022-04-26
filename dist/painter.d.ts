@@ -12,6 +12,7 @@ export interface Rule {
     dataLayer: string;
     symbolizer: PaintSymbolizer;
     filter?: Filter;
+    name?: string;
 }
 export interface XraySelection {
     dataSource?: string;
