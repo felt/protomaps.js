@@ -368,14 +368,14 @@ const leafletLayer = (options: any): any => {
               if (rule.filter(z, pickedFeature.feature)) {
                 features.push({
                   ...pickedFeature,
-                  ruleName: rule.name,
+                  extra: rule.extra,
                 });
               }
             }
           } else {
             features.push(
               ...layerFeatures.map((f: PickedFeature) => {
-                return { ...f, ruleName: rule.name };
+                return { ...f, extra: rule.extra };
               })
             );
           }

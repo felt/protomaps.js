@@ -5061,13 +5061,13 @@ var protomaps = (() => {
               for (let pickedFeature of layerFeatures) {
                 if (rule.filter(z2, pickedFeature.feature)) {
                   features.push(__spreadProps(__spreadValues({}, pickedFeature), {
-                    ruleName: rule.name
+                    extra: rule.extra
                   }));
                 }
               }
             } else {
               features.push(...layerFeatures.map((f2) => {
-                return __spreadProps(__spreadValues({}, f2), { ruleName: rule.name });
+                return __spreadProps(__spreadValues({}, f2), { extra: rule.extra });
               }));
             }
           }
