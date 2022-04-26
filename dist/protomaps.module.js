@@ -3621,10 +3621,10 @@ var View = class {
       };
     });
   }
-  queryFeatures(lng, lat, display_zoom) {
+  queryFeatures(lng, lat, display_zoom, brush_size_base = 16) {
     let rounded_zoom = Math.round(display_zoom);
     let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
-    let brush_size = 16 / (1 << rounded_zoom - data_zoom);
+    let brush_size = brush_size_base / (1 << rounded_zoom - data_zoom);
     return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
   }
 };
@@ -4963,7 +4963,7 @@ var leafletLayer = (options) => {
       let featuresBySourceName = new Map();
       for (var [sourceName, view] of this.views) {
         const z2 = this._map.getZoom();
-        const viewFeatures = view.queryFeatures(lng, lat, z2);
+        const viewFeatures = view.queryFeatures(lng, lat, z2, 32);
         const featuresPerLayer = viewFeatures.reduce((agg, f2) => {
           if (!agg[f2.layerName])
             agg[f2.layerName] = [];

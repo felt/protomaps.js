@@ -27,7 +27,7 @@ export declare class View {
     dataTileForDisplayTile(display_tile: Zxy): TileTransform;
     getBbox(display_zoom: number, bounds: Bbox): Promise<Array<PreparedTile>>;
     getDisplayTile(display_tile: Zxy): Promise<PreparedTile>;
-    queryFeatures(lng: number, lat: number, display_zoom: number): import("./tilecache").PickedFeature[];
+    queryFeatures(lng: number, lat: number, display_zoom: number, brush_size_base?: number): import("./tilecache").PickedFeature[];
 }
 export declare const sourceToView: (o: any) => View;
 export declare const BasemapLayerSourceName = "";
