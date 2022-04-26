@@ -235,7 +235,7 @@ const leafletLayer = (options) => {
             let featuresBySourceName = new Map();
             for (var [sourceName, view] of this.views) {
                 const z = this._map.getZoom();
-                const viewFeatures = view.queryFeatures(lng, lat, z);
+                const viewFeatures = view.queryFeatures(lng, lat, z, 32);
                 const featuresPerLayer = viewFeatures.reduce((agg, f) => {
                     if (!agg[f.layerName])
                         agg[f.layerName] = [];

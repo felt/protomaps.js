@@ -5038,7 +5038,7 @@ var protomaps = (() => {
         let featuresBySourceName = new Map();
         for (var [sourceName, view] of this.views) {
           const z2 = this._map.getZoom();
-          const viewFeatures = view.queryFeatures(lng, lat, z2);
+          const viewFeatures = view.queryFeatures(lng, lat, z2, 32);
           const featuresPerLayer = viewFeatures.reduce((agg, f2) => {
             if (!agg[f2.layerName])
               agg[f2.layerName] = [];
