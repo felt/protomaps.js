@@ -18,6 +18,9 @@ export interface Label {
   draw: (ctx: any, drawExtra?: DrawExtra) => void;
   deduplicationKey?: string;
   deduplicationDistance?: number;
+  dataSource?: string;
+  dataLayer?: string;
+  featureId?: number;
 }
 
 export interface IndexedLabel {
@@ -366,6 +369,9 @@ export class Labeler {
 
         for (let label of labels) {
           var label_added = false;
+          label.dataSource = rule.dataSource;
+          label.dataLayer = rule.dataLayer;
+          label.featureId = feature.id;
           if (
             label.deduplicationKey &&
             this.index.deduplicationCollides(label)

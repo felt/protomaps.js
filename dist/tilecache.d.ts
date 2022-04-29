@@ -17,6 +17,7 @@ export interface Feature {
     readonly geomType: GeomType;
     readonly geom: Point[][];
     readonly numVertices: number;
+    readonly id?: number;
 }
 export interface Zxy {
     readonly z: number;

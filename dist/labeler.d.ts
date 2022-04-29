@@ -11,6 +11,9 @@ export interface Label {
     draw: (ctx: any, drawExtra?: DrawExtra) => void;
     deduplicationKey?: string;
     deduplicationDistance?: number;
+    dataSource?: string;
+    dataLayer?: string;
+    featureId?: number;
 }
 export interface IndexedLabel {
     anchor: Point;
