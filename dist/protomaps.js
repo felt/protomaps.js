@@ -4137,9 +4137,11 @@ var protomaps = (() => {
             continue;
           for (let label of labels) {
             var label_added = false;
-            label.dataSource = rule.dataSource;
-            label.dataLayer = rule.dataLayer;
-            label.featureId = feature.id;
+            if (rule.dataSource && feature.id) {
+              label.dataSource = rule.dataSource;
+              label.dataLayer = rule.dataLayer;
+              label.featureId = feature.id;
+            }
             if (label.deduplicationKey && this.index.deduplicationCollides(label)) {
               continue;
             }
