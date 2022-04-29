@@ -118,6 +118,9 @@ export class Index {
             tileKey: tileKey,
             deduplicationKey: label.deduplicationKey,
             deduplicationDistance: label.deduplicationDistance,
+            dataSource: label.dataSource,
+            dataLayer: label.dataLayer,
+            featureId: label.featureId,
         };
         let entry = this.current.get(tileKey);
         if (!entry) {

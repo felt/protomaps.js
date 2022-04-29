@@ -58,6 +58,13 @@ export interface PickedFeature {
     tileY: number;
     zoom: number;
 }
+export interface LabelPickedFeature {
+    featureId?: number;
+    layerName: string;
+    tileX: number;
+    tileY: number;
+    zoom: number;
+}
 export declare class TileCache {
     source: TileSource;
     cache: Map<string, CacheEntry>;
@@ -65,5 +72,10 @@ export declare class TileCache {
     tileSize: number;
     constructor(source: TileSource, tileSize: number);
     queryFeatures(lng: number, lat: number, zoom: number, brushSize: number): PickedFeature[];
+    queryFeature(dataLayer: string, id: number): Feature | null | undefined;
     get(c: Zxy): Promise<Map<string, Feature[]>>;
+    latLngToTileCoords(lat: number, lng: number, zoom: number): {
+        tile_coords: Zxy;
+        point_in_tile: Point;
+    };
 }

@@ -31,6 +31,9 @@ export interface IndexedLabel {
   tileKey: string;
   deduplicationKey?: string;
   deduplicationDistance?: number;
+  dataSource?: string;
+  dataLayer?: string;
+  featureId?: number;
 }
 
 export interface Layout {
@@ -186,6 +189,9 @@ export class Index {
       tileKey: tileKey,
       deduplicationKey: label.deduplicationKey,
       deduplicationDistance: label.deduplicationDistance,
+      dataSource: label.dataSource,
+      dataLayer: label.dataLayer,
+      featureId: label.featureId,
     };
     let entry = this.current.get(tileKey);
     if (!entry) {
@@ -497,7 +503,7 @@ export class Labelers {
     }
   }
 
-  public getIndex(z: number): RBush {
+  public getIndex(z: number): Index | undefined {
     let labeler = this.labelers.get(z);
     if (labeler) return labeler.index; // TODO cleanup
   }

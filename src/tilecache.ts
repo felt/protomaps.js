@@ -248,7 +248,7 @@ let R = 6378137;
 let MAX_LATITUDE = 85.0511287798;
 let MAXCOORD = R * Math.PI;
 
-let project = (latlng: number[]) => {
+const project = (latlng: number[]) => {
   let d = Math.PI / 180;
   let constrained_lat = Math.max(
     Math.min(MAX_LATITUDE, latlng[0]),
@@ -337,8 +337,26 @@ export function pointMinDistToLines(point: Point, geom: Point[][]): number {
   return min;
 }
 
+function getNormalizedPoint(lat: number, lng: number): Point {
+  const projected = project([lat, lng]);
+  const normalized = new Point(
+    (projected.x + MAXCOORD) / (MAXCOORD * 2),
+    1 - (projected.y + MAXCOORD) / (MAXCOORD * 2)
+  );
+  if (normalized.x > 1) normalized.x = normalized.x - Math.floor(normalized.x);
+  return normalized;
+}
+
 export interface PickedFeature {
   feature: Feature;
+  layerName: string;
+  tileX: number;
+  tileY: number;
+  zoom: number;
+}
+
+export interface LabelPickedFeature {
+  featureId?: number;
   layerName: string;
   tileX: number;
   tileY: number;
@@ -364,13 +382,7 @@ export class TileCache {
     zoom: number,
     brushSize: number
   ): PickedFeature[] {
-    let projected = project([lat, lng]);
-    var normalized = new Point(
-      (projected.x + MAXCOORD) / (MAXCOORD * 2),
-      1 - (projected.y + MAXCOORD) / (MAXCOORD * 2)
-    );
-    if (normalized.x > 1)
-      normalized.x = normalized.x - Math.floor(normalized.x);
+    const normalized = getNormalizedPoint(lat, lng);
     let on_zoom = normalized.mult(1 << zoom);
     let tile_x = Math.floor(on_zoom.x);
     let tile_y = Math.floor(on_zoom.y);
@@ -418,6 +430,16 @@ export class TileCache {
     return retval;
   }
 
+  public queryFeature(dataLayer: string, id: number) {
+    let feature = null;
+    for (const entry of this.cache.values()) {
+      if (entry && !feature) {
+        feature = (entry.data.get(dataLayer) || []).find((f) => f.id === id);
+      }
+    }
+    return feature;
+  }
+
   public async get(c: Zxy): Promise<Map<string, Feature[]>> {
     const idx = toIndex(c);
     return new Promise((resolve, reject) => {
@@ -462,5 +484,24 @@ export class TileCache {
         }
       }
     });
+  }
+
+  public latLngToTileCoords(
+    lat: number,
+    lng: number,
+    zoom: number
+  ): { tile_coords: Zxy; point_in_tile: Point } {
+    const normalized = getNormalizedPoint(lat, lng);
+    let on_zoom = normalized.mult(1 << zoom);
+    let tile_x = Math.floor(on_zoom.x);
+    let tile_y = Math.floor(on_zoom.y);
+    const center = {
+      x: (on_zoom.x - tile_x) * this.tileSize,
+      y: (on_zoom.y - tile_y) * this.tileSize,
+    };
+    return {
+      tile_coords: { z: zoom, x: tile_x, y: tile_y },
+      point_in_tile: new Point(center.x, center.y),
+    };
   }
 }

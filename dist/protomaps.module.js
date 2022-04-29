@@ -3371,6 +3371,13 @@ function pointMinDistToLines(point, geom) {
   }
   return min;
 }
+function getNormalizedPoint(lat, lng) {
+  const projected = project([lat, lng]);
+  const normalized = new import_point_geometry3.default((projected.x + MAXCOORD) / (MAXCOORD * 2), 1 - (projected.y + MAXCOORD) / (MAXCOORD * 2));
+  if (normalized.x > 1)
+    normalized.x = normalized.x - Math.floor(normalized.x);
+  return normalized;
+}
 var TileCache = class {
   constructor(source, tileSize) {
     this.source = source;
@@ -3379,10 +3386,7 @@ var TileCache = class {
     this.tileSize = tileSize;
   }
   queryFeatures(lng, lat, zoom, brushSize) {
-    let projected = project([lat, lng]);
-    var normalized = new import_point_geometry3.default((projected.x + MAXCOORD) / (MAXCOORD * 2), 1 - (projected.y + MAXCOORD) / (MAXCOORD * 2));
-    if (normalized.x > 1)
-      normalized.x = normalized.x - Math.floor(normalized.x);
+    const normalized = getNormalizedPoint(lat, lng);
     let on_zoom = normalized.mult(1 << zoom);
     let tile_x = Math.floor(on_zoom.x);
     let tile_y = Math.floor(on_zoom.y);
@@ -3423,6 +3427,15 @@ var TileCache = class {
       }
     }
     return retval;
+  }
+  queryFeature(dataLayer, id) {
+    let feature = null;
+    for (const entry of this.cache.values()) {
+      if (entry && !feature) {
+        feature = (entry.data.get(dataLayer) || []).find((f2) => f2.id === id);
+      }
+    }
+    return feature;
   }
   get(c2) {
     return __async(this, null, function* () {
@@ -3468,6 +3481,20 @@ var TileCache = class {
         }
       });
     });
+  }
+  latLngToTileCoords(lat, lng, zoom) {
+    const normalized = getNormalizedPoint(lat, lng);
+    let on_zoom = normalized.mult(1 << zoom);
+    let tile_x = Math.floor(on_zoom.x);
+    let tile_y = Math.floor(on_zoom.y);
+    const center = {
+      x: (on_zoom.x - tile_x) * this.tileSize,
+      y: (on_zoom.y - tile_y) * this.tileSize
+    };
+    return {
+      tile_coords: { z: zoom, x: tile_x, y: tile_y },
+      point_in_tile: new import_point_geometry3.default(center.x, center.y)
+    };
   }
 };
 
@@ -3629,6 +3656,26 @@ var View = class {
     let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
     let brush_size = brush_size_base / (1 << rounded_zoom - data_zoom);
     return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
+  }
+  queryFeature(dataLayer, id) {
+    return this.tileCache.queryFeature(dataLayer, id);
+  }
+  getLngLatTileInfo(lng, lat, zoom) {
+    const tileCoords = this.tileCache.latLngToTileCoords(lng, lat, zoom);
+    const transform = this.dataTileForDisplayTile(tileCoords.tile_coords);
+    const dataTileCoords = this.tileCache.latLngToTileCoords(lng, lat, transform.data_tile.z);
+    const llCoords = dataTileCoords.point_in_tile.mult(transform.scale).add(transform.origin);
+    return {
+      bbox: {
+        minX: llCoords.x,
+        minY: llCoords.y,
+        maxX: llCoords.x,
+        maxY: llCoords.y
+      },
+      tileX: tileCoords.tile_coords.x,
+      tileY: tileCoords.tile_coords.y,
+      zoom: tileCoords.tile_coords.z
+    };
   }
 };
 var sourceToView = (o2) => {
@@ -3904,7 +3951,10 @@ var Index = class {
       order,
       tileKey,
       deduplicationKey: label.deduplicationKey,
-      deduplicationDistance: label.deduplicationDistance
+      deduplicationDistance: label.deduplicationDistance,
+      dataSource: label.dataSource,
+      dataLayer: label.dataLayer,
+      featureId: label.featureId
     };
     let entry = this.current.get(tileKey);
     if (!entry) {
@@ -4967,18 +5017,41 @@ var leafletLayer = (options) => {
       }
       return featuresBySourceName;
     }
-    queryRenderedFeatures(lng, lat) {
+    queryRenderedFeatures(lng, lat, ignoreBasemap = false) {
       let featuresBySourceName = new Map();
       for (var [sourceName, view] of this.views) {
         const z2 = this._map.getZoom();
         const viewFeatures = view.queryFeatures(lng, lat, z2, 32);
+        const zoom = Math.round(z2);
+        const labelTree = this.labelers.getIndex(zoom);
+        let labelFeatures = new Set();
+        let info;
+        if (labelTree) {
+          info = view.getLngLatTileInfo(lat, lng, zoom);
+          labelFeatures = labelTree.searchBbox(info.bbox, Infinity);
+        }
         const featuresPerLayer = viewFeatures.reduce((agg, f2) => {
           if (!agg[f2.layerName])
             agg[f2.layerName] = [];
           agg[f2.layerName].push(f2);
           return agg;
         }, {});
+        const labelFeaturesPerSource = {};
+        for (let feature of labelFeatures) {
+          if ((feature.dataLayer || !ignoreBasemap) && (feature.dataSource === sourceName || sourceName == BasemapLayerSourceName && !feature.dataSource)) {
+            if (!labelFeaturesPerSource[sourceName])
+              labelFeaturesPerSource[sourceName] = [];
+            labelFeaturesPerSource[sourceName].push({
+              featureId: feature.featureId,
+              layerName: feature.dataLayer || "",
+              tileX: info.tileX,
+              tileY: info.tileY,
+              zoom: info.zoom
+            });
+          }
+        }
         const features = [];
+        let labelArray = labelFeaturesPerSource[sourceName] || [];
         for (let rule of this.paint_rules) {
           if (rule.minzoom && z2 < rule.minzoom)
             continue;
@@ -5001,9 +5074,18 @@ var leafletLayer = (options) => {
             }));
           }
         }
-        featuresBySourceName.set(sourceName, features);
+        featuresBySourceName.set(sourceName, {
+          features,
+          labels: labelArray
+        });
       }
       return featuresBySourceName;
+    }
+    queryFeature(srcName, dataLayer, id) {
+      const view = this.views.get(srcName);
+      if (view) {
+        return view.queryFeature(dataLayer, id);
+      }
     }
     inspect(layer) {
       return (ev) => {

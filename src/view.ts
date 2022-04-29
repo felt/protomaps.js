@@ -1,5 +1,6 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
+import { IndexedLabel } from ".";
 import { EventQueue, ProtomapsEvent } from "./events";
 import {
   Zxy,
@@ -235,6 +236,36 @@ export class View {
     let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
     let brush_size = brush_size_base / (1 << (rounded_zoom - data_zoom));
     return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
+  }
+
+  public queryFeature(dataLayer: string, id: number) {
+    return this.tileCache.queryFeature(dataLayer, id);
+  }
+
+  public getLngLatTileInfo(lng: number, lat: number, zoom: number) {
+    const tileCoords = this.tileCache.latLngToTileCoords(lng, lat, zoom);
+    const transform = this.dataTileForDisplayTile(tileCoords.tile_coords);
+    const dataTileCoords = this.tileCache.latLngToTileCoords(
+      lng,
+      lat,
+      transform.data_tile.z
+    );
+    const llCoords = dataTileCoords.point_in_tile
+      .mult(transform.scale)
+      .add(transform.origin);
+    return {
+      // A bbox around the [lng, lat] pair in world-tile-coordinates
+      bbox: {
+        minX: llCoords.x,
+        minY: llCoords.y,
+        maxX: llCoords.x,
+        maxY: llCoords.y,
+      },
+      // Tile coordinates
+      tileX: tileCoords.tile_coords.x,
+      tileY: tileCoords.tile_coords.y,
+      zoom: tileCoords.tile_coords.z,
+    };
   }
 }
 
