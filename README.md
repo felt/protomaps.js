@@ -1,6 +1,6 @@
 # protomaps.js
 
-A vector map renderer for the web.
+A vector map renderer for the web. 
 
 [![npm](https://img.shields.io/npm/v/protomaps)](https://www.npmjs.com/package/protomaps)
 [![Test suite](https://github.com/protomaps/protomaps.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/protomaps/protomaps.js/actions/workflows/node.js.yml)
