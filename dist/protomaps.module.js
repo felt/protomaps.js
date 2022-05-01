@@ -3672,9 +3672,9 @@ var View = class {
         maxX: llCoords.x,
         maxY: llCoords.y
       },
-      tileX: tileCoords.tile_coords.x,
-      tileY: tileCoords.tile_coords.y,
-      zoom: tileCoords.tile_coords.z
+      tileX: dataTileCoords.tile_coords.x,
+      tileY: dataTileCoords.tile_coords.y,
+      zoom: dataTileCoords.tile_coords.z
     };
   }
 };
