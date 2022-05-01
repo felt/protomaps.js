@@ -3,20 +3,15 @@ declare var L: any;
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 
-import {
-  BasemapLayerSourceName,
-  PreparedTile,
-  sourcesToViews,
-  sourceToView,
-  View,
-} from "../view";
+import { PreparedTile, sourcesToViews, sourceToView, View } from "../view";
 import { painter, Rule } from "../painter";
-import { Labelers, LabelRule } from "../labeler";
+import { IndexedLabel, Labelers, LabelRule } from "../labeler";
 import { light } from "../default_style/light";
 import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
-import { PickedFeature } from "../tilecache";
+import { LabelPickedFeature, PickedFeature } from "../tilecache";
+import { BasemapLayerSourceName } from "..";
 const LeafletTileSize = 256;
 
 const timer = (duration: number) => {
@@ -340,13 +335,25 @@ const leafletLayer = (options: any): any => {
       return featuresBySourceName;
     }
 
-    public queryRenderedFeatures(lng: number, lat: number) {
+    public queryRenderedFeatures(
+      lng: number,
+      lat: number,
+      ignoreBasemap = false
+    ) {
       // Instead of getting all the features, we only get
       // the rendered ones
       let featuresBySourceName = new Map();
       for (var [sourceName, view] of this.views) {
         const z = this._map.getZoom();
         const viewFeatures = view.queryFeatures(lng, lat, z, 32);
+        const zoom = Math.round(z);
+        const labelTree = this.labelers.getIndex(zoom);
+        let labelFeatures = new Set<IndexedLabel>();
+        let info;
+        if (labelTree) {
+          info = view.getLngLatTileInfo(lat, lng, zoom);
+          labelFeatures = labelTree.searchBbox(info.bbox, Infinity);
+        }
         const featuresPerLayer = viewFeatures.reduce(
           (agg: { [key: string]: PickedFeature[] }, f: PickedFeature) => {
             if (!agg[f.layerName]) agg[f.layerName] = [];
@@ -355,7 +362,28 @@ const leafletLayer = (options: any): any => {
           },
           {}
         );
+        const labelFeaturesPerSource: { [key: string]: LabelPickedFeature[] } =
+          {};
+        for (let feature of labelFeatures) {
+          if (
+            (feature.dataLayer || !ignoreBasemap) &&
+            (feature.dataSource === sourceName ||
+              (sourceName == BasemapLayerSourceName && !feature.dataSource))
+          ) {
+            if (!labelFeaturesPerSource[sourceName])
+              labelFeaturesPerSource[sourceName] = [];
+            labelFeaturesPerSource[sourceName].push({
+              featureId: feature.featureId,
+              layerName: feature.dataLayer || "",
+              tileX: info.tileX,
+              tileY: info.tileY,
+              zoom: info.zoom,
+            });
+          }
+        }
         const features: PickedFeature[] = [];
+        let labelArray: LabelPickedFeature[] =
+          labelFeaturesPerSource[sourceName] || [];
         for (let rule of this.paint_rules) {
           if (rule.minzoom && z < rule.minzoom) continue;
           if (rule.maxzoom && z > rule.maxzoom) continue;
@@ -380,9 +408,19 @@ const leafletLayer = (options: any): any => {
             );
           }
         }
-        featuresBySourceName.set(sourceName, features);
+        featuresBySourceName.set(sourceName, {
+          features,
+          labels: labelArray,
+        });
       }
       return featuresBySourceName;
+    }
+
+    public queryFeature(srcName: string, dataLayer: string, id: number) {
+      const view = this.views.get(srcName);
+      if (view) {
+        return view.queryFeature(dataLayer, id);
+      }
     }
 
     public inspect(layer: LeafletLayer) {

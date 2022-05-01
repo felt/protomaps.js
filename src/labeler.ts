@@ -18,6 +18,9 @@ export interface Label {
   draw: (ctx: any, drawExtra?: DrawExtra) => void;
   deduplicationKey?: string;
   deduplicationDistance?: number;
+  dataSource?: string;
+  dataLayer?: string;
+  featureId?: number;
 }
 
 export interface IndexedLabel {
@@ -28,6 +31,9 @@ export interface IndexedLabel {
   tileKey: string;
   deduplicationKey?: string;
   deduplicationDistance?: number;
+  dataSource?: string;
+  dataLayer?: string;
+  featureId?: number;
 }
 
 export interface Layout {
@@ -183,6 +189,9 @@ export class Index {
       tileKey: tileKey,
       deduplicationKey: label.deduplicationKey,
       deduplicationDistance: label.deduplicationDistance,
+      dataSource: label.dataSource,
+      dataLayer: label.dataLayer,
+      featureId: label.featureId,
     };
     let entry = this.current.get(tileKey);
     if (!entry) {
@@ -366,6 +375,11 @@ export class Labeler {
 
         for (let label of labels) {
           var label_added = false;
+          if (rule.dataSource && feature.id) {
+            label.dataSource = rule.dataSource;
+            label.dataLayer = rule.dataLayer;
+            label.featureId = feature.id;
+          }
           if (
             label.deduplicationKey &&
             this.index.deduplicationCollides(label)
@@ -489,7 +503,7 @@ export class Labelers {
     }
   }
 
-  public getIndex(z: number): RBush {
+  public getIndex(z: number): Index | undefined {
     let labeler = this.labelers.get(z);
     if (labeler) return labeler.index; // TODO cleanup
   }

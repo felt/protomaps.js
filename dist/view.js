@@ -180,6 +180,30 @@ export class View {
         let brush_size = brush_size_base / (1 << (rounded_zoom - data_zoom));
         return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
     }
+    queryFeature(dataLayer, id) {
+        return this.tileCache.queryFeature(dataLayer, id);
+    }
+    getLngLatTileInfo(lng, lat, zoom) {
+        const tileCoords = this.tileCache.latLngToTileCoords(lng, lat, zoom);
+        const transform = this.dataTileForDisplayTile(tileCoords.tile_coords);
+        const dataTileCoords = this.tileCache.latLngToTileCoords(lng, lat, transform.data_tile.z);
+        const llCoords = dataTileCoords.point_in_tile
+            .mult(transform.scale)
+            .add(transform.origin);
+        return {
+            // A bbox around the [lng, lat] pair in world-tile-coordinates
+            bbox: {
+                minX: llCoords.x,
+                minY: llCoords.y,
+                maxX: llCoords.x,
+                maxY: llCoords.y,
+            },
+            // Tile coordinates
+            tileX: tileCoords.tile_coords.x,
+            tileY: tileCoords.tile_coords.y,
+            zoom: tileCoords.tile_coords.z,
+        };
+    }
 }
 export const sourceToView = (o) => {
     const level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;

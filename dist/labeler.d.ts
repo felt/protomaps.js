@@ -11,6 +11,9 @@ export interface Label {
     draw: (ctx: any, drawExtra?: DrawExtra) => void;
     deduplicationKey?: string;
     deduplicationDistance?: number;
+    dataSource?: string;
+    dataLayer?: string;
+    featureId?: number;
 }
 export interface IndexedLabel {
     anchor: Point;
@@ -20,6 +23,9 @@ export interface IndexedLabel {
     tileKey: string;
     deduplicationKey?: string;
     deduplicationDistance?: number;
+    dataSource?: string;
+    dataLayer?: string;
+    featureId?: number;
 }
 export interface Layout {
     index: Index;
@@ -82,6 +88,6 @@ export declare class Labelers {
     callback: TileInvalidationCallback;
     constructor(scratch: any, labelRules: LabelRule[], maxLabeledTiles: number, callback: TileInvalidationCallback);
     add(z: number, prepared_tilemap: Map<string, PreparedTile>): number;
-    getIndex(z: number): RBush;
+    getIndex(z: number): Index | undefined;
 }
 export {};

@@ -118,6 +118,9 @@ export class Index {
             tileKey: tileKey,
             deduplicationKey: label.deduplicationKey,
             deduplicationDistance: label.deduplicationDistance,
+            dataSource: label.dataSource,
+            dataLayer: label.dataLayer,
+            featureId: label.featureId,
         };
         let entry = this.current.get(tileKey);
         if (!entry) {
@@ -282,6 +285,11 @@ export class Labeler {
                     continue;
                 for (let label of labels) {
                     var label_added = false;
+                    if (rule.dataSource && feature.id) {
+                        label.dataSource = rule.dataSource;
+                        label.dataLayer = rule.dataLayer;
+                        label.featureId = feature.id;
+                    }
                     if (label.deduplicationKey &&
                         this.index.deduplicationCollides(label)) {
                         continue;
