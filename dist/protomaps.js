@@ -5101,6 +5101,8 @@ var protomaps = (() => {
       queryRenderedFeatures(lng, lat, ignoreBasemap = false) {
         let featuresBySourceName = new Map();
         for (var [sourceName, view] of this.views) {
+          if (ignoreBasemap && sourceName === BasemapLayerSourceName)
+            continue;
           const z2 = this._map.getZoom();
           const viewFeatures = view.queryFeatures(lng, lat, z2, 32);
           const zoom = Math.round(z2);

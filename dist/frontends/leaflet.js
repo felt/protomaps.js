@@ -235,6 +235,8 @@ const leafletLayer = (options) => {
             // the rendered ones
             let featuresBySourceName = new Map();
             for (var [sourceName, view] of this.views) {
+                if (ignoreBasemap && sourceName === BasemapLayerSourceName)
+                    continue;
                 const z = this._map.getZoom();
                 const viewFeatures = view.queryFeatures(lng, lat, z, 32);
                 const zoom = Math.round(z);
