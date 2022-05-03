@@ -5056,30 +5056,8 @@ var leafletLayer = (options) => {
             });
           }
         }
-        const features = [];
+        const features = this.getRenderedFeatures(featuresPerLayer);
         let labelArray = labelFeaturesPerSource[sourceName] || [];
-        for (let rule of this.paint_rules) {
-          if (rule.minzoom && z2 < rule.minzoom)
-            continue;
-          if (rule.maxzoom && z2 > rule.maxzoom)
-            continue;
-          const layerFeatures = featuresPerLayer[rule.dataLayer];
-          if (!layerFeatures)
-            continue;
-          if (rule.filter) {
-            for (let pickedFeature of layerFeatures) {
-              if (rule.filter(z2, pickedFeature.feature)) {
-                features.push(__spreadProps(__spreadValues({}, pickedFeature), {
-                  extra: rule.extra
-                }));
-              }
-            }
-          } else {
-            features.push(...layerFeatures.map((f2) => {
-              return __spreadProps(__spreadValues({}, f2), { extra: rule.extra });
-            }));
-          }
-        }
         featuresBySourceName.set(sourceName, {
           features,
           labels: labelArray
@@ -5087,10 +5065,40 @@ var leafletLayer = (options) => {
       }
       return featuresBySourceName;
     }
+    getRenderedFeatures(featuresPerLayer) {
+      const z2 = this._map.getZoom();
+      const features = [];
+      for (let rule of this.paint_rules) {
+        if (rule.minzoom && z2 < rule.minzoom)
+          continue;
+        if (rule.maxzoom && z2 > rule.maxzoom)
+          continue;
+        const layerFeatures = featuresPerLayer[rule.dataLayer];
+        if (!layerFeatures)
+          continue;
+        if (rule.filter) {
+          for (let pickedFeature of layerFeatures) {
+            if (rule.filter(z2, pickedFeature.feature)) {
+              features.push(__spreadProps(__spreadValues({}, pickedFeature), {
+                extra: rule.extra
+              }));
+            }
+          }
+        } else {
+          features.push(...layerFeatures.map((f2) => {
+            return __spreadProps(__spreadValues({}, f2), { extra: rule.extra });
+          }));
+        }
+      }
+      return features;
+    }
     queryFeature(srcName, dataLayer, id) {
       const view = this.views.get(srcName);
       if (view) {
-        return view.queryFeature(dataLayer, id);
+        const feature = view.queryFeature(dataLayer, id);
+        const features = this.getRenderedFeatures({ [dataLayer]: [feature] });
+        if (features.length !== 0)
+          return features[0];
       }
     }
     inspect(layer) {

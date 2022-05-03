@@ -267,29 +267,8 @@ const leafletLayer = (options) => {
                         });
                     }
                 }
-                const features = [];
+                const features = this.getRenderedFeatures(featuresPerLayer);
                 let labelArray = labelFeaturesPerSource[sourceName] || [];
-                for (let rule of this.paint_rules) {
-                    if (rule.minzoom && z < rule.minzoom)
-                        continue;
-                    if (rule.maxzoom && z > rule.maxzoom)
-                        continue;
-                    const layerFeatures = featuresPerLayer[rule.dataLayer];
-                    if (!layerFeatures)
-                        continue;
-                    if (rule.filter) {
-                        for (let pickedFeature of layerFeatures) {
-                            if (rule.filter(z, pickedFeature.feature)) {
-                                features.push(Object.assign(Object.assign({}, pickedFeature), { extra: rule.extra }));
-                            }
-                        }
-                    }
-                    else {
-                        features.push(...layerFeatures.map((f) => {
-                            return Object.assign(Object.assign({}, f), { extra: rule.extra });
-                        }));
-                    }
-                }
                 featuresBySourceName.set(sourceName, {
                     features,
                     labels: labelArray,
@@ -297,10 +276,39 @@ const leafletLayer = (options) => {
             }
             return featuresBySourceName;
         }
+        getRenderedFeatures(featuresPerLayer) {
+            const z = this._map.getZoom();
+            const features = [];
+            for (let rule of this.paint_rules) {
+                if (rule.minzoom && z < rule.minzoom)
+                    continue;
+                if (rule.maxzoom && z > rule.maxzoom)
+                    continue;
+                const layerFeatures = featuresPerLayer[rule.dataLayer];
+                if (!layerFeatures)
+                    continue;
+                if (rule.filter) {
+                    for (let pickedFeature of layerFeatures) {
+                        if (rule.filter(z, pickedFeature.feature)) {
+                            features.push(Object.assign(Object.assign({}, pickedFeature), { extra: rule.extra }));
+                        }
+                    }
+                }
+                else {
+                    features.push(...layerFeatures.map((f) => {
+                        return Object.assign(Object.assign({}, f), { extra: rule.extra });
+                    }));
+                }
+            }
+            return features;
+        }
         queryFeature(srcName, dataLayer, id) {
             const view = this.views.get(srcName);
             if (view) {
-                return view.queryFeature(dataLayer, id);
+                const feature = view.queryFeature(dataLayer, id);
+                const features = this.getRenderedFeatures({ [dataLayer]: [feature] });
+                if (features.length !== 0)
+                    return features[0];
             }
         }
         inspect(layer) {

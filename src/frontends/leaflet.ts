@@ -381,33 +381,9 @@ const leafletLayer = (options: any): any => {
             });
           }
         }
-        const features: PickedFeature[] = [];
+        const features = this.getRenderedFeatures(featuresPerLayer);
         let labelArray: LabelPickedFeature[] =
           labelFeaturesPerSource[sourceName] || [];
-        for (let rule of this.paint_rules) {
-          if (rule.minzoom && z < rule.minzoom) continue;
-          if (rule.maxzoom && z > rule.maxzoom) continue;
-
-          const layerFeatures = featuresPerLayer[rule.dataLayer];
-          if (!layerFeatures) continue;
-
-          if (rule.filter) {
-            for (let pickedFeature of layerFeatures) {
-              if (rule.filter(z, pickedFeature.feature)) {
-                features.push({
-                  ...pickedFeature,
-                  extra: rule.extra,
-                });
-              }
-            }
-          } else {
-            features.push(
-              ...layerFeatures.map((f: PickedFeature) => {
-                return { ...f, extra: rule.extra };
-              })
-            );
-          }
-        }
         featuresBySourceName.set(sourceName, {
           features,
           labels: labelArray,
@@ -416,10 +392,44 @@ const leafletLayer = (options: any): any => {
       return featuresBySourceName;
     }
 
+    private getRenderedFeatures(featuresPerLayer: {
+      [key: string]: PickedFeature[];
+    }): PickedFeature[] {
+      const z = this._map.getZoom();
+      const features = [];
+      for (let rule of this.paint_rules) {
+        if (rule.minzoom && z < rule.minzoom) continue;
+        if (rule.maxzoom && z > rule.maxzoom) continue;
+
+        const layerFeatures = featuresPerLayer[rule.dataLayer];
+        if (!layerFeatures) continue;
+
+        if (rule.filter) {
+          for (let pickedFeature of layerFeatures) {
+            if (rule.filter(z, pickedFeature.feature)) {
+              features.push({
+                ...pickedFeature,
+                extra: rule.extra,
+              });
+            }
+          }
+        } else {
+          features.push(
+            ...layerFeatures.map((f: PickedFeature) => {
+              return { ...f, extra: rule.extra };
+            })
+          );
+        }
+      }
+      return features;
+    }
+
     public queryFeature(srcName: string, dataLayer: string, id: number) {
       const view = this.views.get(srcName);
       if (view) {
-        return view.queryFeature(dataLayer, id);
+        const feature = view.queryFeature(dataLayer, id);
+        const features = this.getRenderedFeatures({ [dataLayer]: [feature] });
+        if (features.length !== 0) return features[0];
       }
     }
 

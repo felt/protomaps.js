@@ -20,6 +20,13 @@ function replacer(key, value) {
     layer.addTo(map);
     map.on("click", function(e) {
       const features = layer.queryRenderedFeatures(e.latlng.lng, e.latlng.lat);
+      const featuresFromLabels = [];
+      features.get("").labels.forEach(l => {
+        if (l.featureId) {
+          featuresFromLabels.push(layer.queryFeature("", l.layerName, l.featureId));
+        }
+      })
       console.log(JSON.stringify(features, replacer));
+      console.log("Picked labels from features with ids: ", featuresFromLabels);
     })
 })();
