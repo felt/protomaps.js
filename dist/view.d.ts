@@ -28,7 +28,7 @@ export declare class View {
     getBbox(display_zoom: number, bounds: Bbox): Promise<Array<PreparedTile>>;
     getDisplayTile(display_tile: Zxy): Promise<PreparedTile>;
     queryFeatures(lng: number, lat: number, display_zoom: number, brush_size_base?: number): import("./tilecache").PickedFeature[];
-    queryFeature(dataLayer: string, id: number): Feature | null | undefined;
+    queryFeature(dataLayer: string, id: number): Feature | null;
     getLngLatTileInfo(lng: number, lat: number, zoom: number): {
         bbox: {
             minX: any;

@@ -72,7 +72,7 @@ export declare class TileCache {
     tileSize: number;
     constructor(source: TileSource, tileSize: number);
     queryFeatures(lng: number, lat: number, zoom: number, brushSize: number): PickedFeature[];
-    queryFeature(dataLayer: string, id: number): Feature | null | undefined;
+    queryFeature(dataLayer: string, id: number): Feature | null;
     get(c: Zxy): Promise<Map<string, Feature[]>>;
     latLngToTileCoords(lat: number, lng: number, zoom: number): {
         tile_coords: Zxy;
