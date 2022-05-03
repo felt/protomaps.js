@@ -3505,9 +3505,15 @@ var protomaps = (() => {
     }
     queryFeature(dataLayer, id) {
       let feature = null;
-      for (const entry of this.cache.values()) {
-        if (entry && !feature) {
-          feature = (entry.data.get(dataLayer) || []).find((f2) => f2.id === id);
+      let tileIndex = [0, 0, 0];
+      for (const [tile, entry] of this.cache.entries()) {
+        const index = tile.split(":").map((i2) => parseInt(i2));
+        if (entry.data.size !== 0) {
+          const featureInTile = (entry.data.get(dataLayer) || []).find((f2) => f2.id === id);
+          if (featureInTile && index[2] > tileIndex[2]) {
+            feature = featureInTile;
+            tileIndex = index;
+          }
         }
       }
       return feature;
