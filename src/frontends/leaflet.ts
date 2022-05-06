@@ -12,7 +12,8 @@ import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { LabelPickedFeature, PickedFeature } from "../tilecache";
 import { BasemapLayerSourceName } from "..";
-const LeafletTileSize = 256;
+
+const LeafletTileSize = 258;
 
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
