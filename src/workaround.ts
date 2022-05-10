@@ -188,7 +188,7 @@ export const splitMultiLineString = (mls: Point[][], maxVertices: number) => {
     var temp = ls;
     if (ls.length > maxVertices) {
       console.log("LineString with length: ", ls.length);
-      temp = simplify(ls, maxVertices);
+      temp = simplify([ls], maxVertices);
     }
     if (current.length > 0 && currentVertices + temp.length > maxVertices) {
       retval.push(current);

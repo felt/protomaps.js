@@ -3066,7 +3066,7 @@ var splitMultiLineString = (mls, maxVertices) => {
     var temp = ls;
     if (ls.length > maxVertices) {
       console.log("LineString with length: ", ls.length);
-      temp = simplify(ls, maxVertices);
+      temp = simplify([ls], maxVertices);
     }
     if (current.length > 0 && currentVertices + temp.length > maxVertices) {
       retval.push(current);
@@ -4814,7 +4814,7 @@ var labelRules = (params, shade, language1, language2) => {
 };
 
 // src/frontends/leaflet.ts
-var LeafletTileSize = 258;
+var LeafletTileSize = 256;
 var timer = (duration) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {

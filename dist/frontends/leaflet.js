@@ -17,7 +17,7 @@ import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { BasemapLayerSourceName } from "..";
-const LeafletTileSize = 258;
+const LeafletTileSize = 256;
 const timer = (duration) => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
