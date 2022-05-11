@@ -1882,7 +1882,7 @@ var StringAttr = class {
 };
 var NumberAttr = class {
   constructor(c2, defaultValue = 1) {
-    this.value = c2 || defaultValue;
+    this.value = c2 !== void 0 && c2 !== null ? c2 : defaultValue;
     this.per_feature = typeof this.value == "function" && this.value.length == 2;
   }
   get(z2, f2) {

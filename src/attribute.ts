@@ -23,7 +23,7 @@ export class NumberAttr {
   per_feature: boolean;
 
   constructor(c: any, defaultValue: number = 1) {
-    this.value = c || defaultValue;
+    this.value = c !== undefined && c !== null ? c : defaultValue;
     this.per_feature =
       typeof this.value == "function" && this.value.length == 2;
   }

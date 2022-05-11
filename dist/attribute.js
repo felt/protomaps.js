@@ -14,7 +14,7 @@ export class StringAttr {
 }
 export class NumberAttr {
     constructor(c, defaultValue = 1) {
-        this.value = c || defaultValue;
+        this.value = c !== undefined && c !== null ? c : defaultValue;
         this.per_feature =
             typeof this.value == "function" && this.value.length == 2;
     }
