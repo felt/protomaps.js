@@ -101,6 +101,7 @@ export class PolygonSymbolizer implements PaintSymbolizer {
       ctx.strokeStyle = this.stroke.get(z);
       let width = this.width.get(z);
       if (width > 0) this.do_stroke = true;
+      else this.do_stroke = false;
       ctx.lineWidth = width;
     }
     if (this.pattern) {
@@ -170,6 +171,7 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
     ctx.strokeStyle = this.stroke.get(z);
     let width = this.width.get(z);
     if (width > 0) this.do_stroke = true;
+    else this.do_stroke = false;
     ctx.lineWidth = width;
     if (this.pattern) {
       ctx.fillStyle = ctx.createPattern(this.pattern, "repeat");

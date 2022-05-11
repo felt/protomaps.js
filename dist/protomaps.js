@@ -2234,6 +2234,8 @@ var protomaps = (() => {
         let width = this.width.get(z2);
         if (width > 0)
           this.do_stroke = true;
+        else
+          this.do_stroke = false;
         ctx.lineWidth = width;
       }
       if (this.pattern) {
@@ -2295,6 +2297,8 @@ var protomaps = (() => {
       let width = this.width.get(z2);
       if (width > 0)
         this.do_stroke = true;
+      else
+        this.do_stroke = false;
       ctx.lineWidth = width;
       if (this.pattern) {
         ctx.fillStyle = ctx.createPattern(this.pattern, "repeat");
