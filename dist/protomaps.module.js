@@ -5111,19 +5111,21 @@ var leafletLayer = (options) => {
       const view = this.views.get(srcName);
       if (view) {
         const feature = view.queryFeature(dataLayer, id);
-        const features = this.getRenderedFeatures({
-          [dataLayer]: [
-            {
-              feature,
-              layerName: dataLayer,
-              tileX: 0,
-              tileY: 0,
-              zoom: 0
-            }
-          ]
-        });
-        if (features.length !== 0)
-          return features[0];
+        if (feature) {
+          const features = this.getRenderedFeatures({
+            [dataLayer]: [
+              {
+                feature,
+                layerName: dataLayer,
+                tileX: 0,
+                tileY: 0,
+                zoom: 0
+              }
+            ]
+          });
+          if (features.length !== 0)
+            return features[0];
+        }
       }
     }
     inspect(layer) {
