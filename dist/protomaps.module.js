@@ -1881,16 +1881,22 @@ var StringAttr = class {
   }
 };
 var NumberAttr = class {
-  constructor(c2, defaultValue = 1) {
+  constructor(c2, defaultValue = 1, allowZeroValues = true) {
     this.value = c2 !== void 0 && c2 !== null ? c2 : defaultValue;
     this.per_feature = typeof this.value == "function" && this.value.length == 2;
+    this.allowZeroValues = allowZeroValues;
   }
   get(z2, f2) {
+    let value;
     if (typeof this.value == "function") {
-      return this.value(z2, f2);
+      value = this.value(z2, f2);
     } else {
-      return this.value;
+      value = this.value;
     }
+    if (!this.allowZeroValues && value === 0)
+      return 1e-5;
+    else
+      return value;
   }
 };
 var TextAttr = class {
@@ -2330,7 +2336,7 @@ function cubicBezier(x1, y1, x2, y2, stops) {
 var LineSymbolizer = class {
   constructor(options) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width);
+    this.width = new NumberAttr(options.width, 1, false);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
@@ -2394,7 +2400,7 @@ var LineSymbolizer = class {
 var GroupedLineSymbolizer = class {
   constructor(options) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width);
+    this.width = new NumberAttr(options.width, 1, false);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
