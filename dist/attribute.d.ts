@@ -8,7 +8,8 @@ export declare class StringAttr {
 export declare class NumberAttr {
     value: number | ((z: number, f?: Feature) => number);
     per_feature: boolean;
-    constructor(c: any, defaultValue?: number);
+    allowZeroValues: boolean;
+    constructor(c: any, defaultValue?: number, allowZeroValues?: boolean);
     get(z: number, f?: Feature): number;
 }
 export declare class TextAttr {

@@ -13,18 +13,24 @@ export class StringAttr {
     }
 }
 export class NumberAttr {
-    constructor(c, defaultValue = 1) {
+    constructor(c, defaultValue = 1, allowZeroValues = true) {
         this.value = c !== undefined && c !== null ? c : defaultValue;
         this.per_feature =
             typeof this.value == "function" && this.value.length == 2;
+        this.allowZeroValues = allowZeroValues;
     }
     get(z, f) {
+        let value;
         if (typeof this.value == "function") {
-            return this.value(z, f);
+            value = this.value(z, f);
         }
         else {
-            return this.value;
+            value = this.value;
         }
+        if (!this.allowZeroValues && value === 0)
+            return 0.00001;
+        else
+            return value;
     }
 }
 export class TextAttr {

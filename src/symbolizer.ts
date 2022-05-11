@@ -321,7 +321,7 @@ export class LineSymbolizer implements PaintSymbolizer {
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width);
+    this.width = new NumberAttr(options.width, 1, false);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
@@ -406,7 +406,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width);
+    this.width = new NumberAttr(options.width, 1, false);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
