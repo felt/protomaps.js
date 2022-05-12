@@ -4116,6 +4116,13 @@ var Labeler = class {
         if (rule.filter && !rule.filter(this.z, feature))
           continue;
         let transformed = transformGeom(feature.geom, pt.scale, pt.origin);
+        let totalVertices = 0;
+        const inTileCount = transformed.reduce((agg, g) => agg + g.reduce((agg2, p2) => {
+          totalVertices++;
+          return (pt == null ? void 0 : pt.origin.x) < p2.x && (pt == null ? void 0 : pt.origin.y) < p2.y && p2.x < (pt == null ? void 0 : pt.origin.x) + (pt == null ? void 0 : pt.dim) && p2.y < (pt == null ? void 0 : pt.origin.y) + (pt == null ? void 0 : pt.dim) ? agg2 + 1 : agg2;
+        }, 0), 0);
+        if (inTileCount < totalVertices * 0.95)
+          continue;
         let labels = rule.symbolizer.place(layout, transformed, feature);
         if (!labels)
           continue;

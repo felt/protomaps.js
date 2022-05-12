@@ -15,7 +15,7 @@ export interface TileTransform {
     scale: number;
     dim: number;
 }
-export declare const transformGeom: (geom: Array<Array<Point>>, scale: number, translate: any) => any[][];
+export declare const transformGeom: (geom: Array<Array<Point>>, scale: number, translate: any) => Array<Array<Point>>;
 export declare const wrap: (val: number, z: number) => number;
 export declare class View {
     levelDiff: number;

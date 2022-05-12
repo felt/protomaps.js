@@ -370,6 +370,23 @@ export class Labeler {
       for (let feature of feats) {
         if (rule.filter && !rule.filter(this.z, feature)) continue;
         let transformed = transformGeom(feature.geom, pt.scale, pt.origin);
+        let totalVertices = 0;
+        const inTileCount = transformed.reduce(
+          (agg, g) =>
+            agg +
+            g.reduce((agg2, p) => {
+              totalVertices++;
+              return pt?.origin.x < p.x &&
+                pt?.origin.y < p.y &&
+                p.x < pt?.origin.x + pt?.dim &&
+                p.y < pt?.origin.y + pt?.dim
+                ? agg2 + 1
+                : agg2;
+            }, 0),
+          0
+        );
+        if (inTileCount < totalVertices * 0.95) continue;
+
         let labels = rule.symbolizer.place(layout, transformed, feature);
         if (!labels) continue;
 

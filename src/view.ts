@@ -40,7 +40,7 @@ export const transformGeom = (
   geom: Array<Array<Point>>,
   scale: number,
   translate: Point
-) => {
+): Array<Array<Point>> => {
   let retval = [];
   for (let arr of geom) {
     let loop = [];
