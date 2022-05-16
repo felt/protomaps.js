@@ -12,7 +12,8 @@ import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { LabelPickedFeature, PickedFeature } from "../tilecache";
 import { BasemapLayerSourceName } from "..";
-const LeafletTileSize = 256;
+
+const DefaultLeafletTileSize = 256;
 
 const timer = (duration: number) => {
   return new Promise<void>((resolve, reject) => {
@@ -91,7 +92,8 @@ const leafletLayer = (options: any): any => {
         16,
         this.onTilesInvalidated
       );
-      this.tile_size = LeafletTileSize * window.devicePixelRatio;
+      this.protomaps_tile_size = options.tile_size || DefaultLeafletTileSize;
+      this.tile_size = this.protomaps_tile_size * window.devicePixelRatio;
       this.tileDelay = options.tileDelay || 3;
       this.lang = options.lang;
 
@@ -184,19 +186,19 @@ const leafletLayer = (options: any): any => {
       element.height = this.tile_size;
       let ctx = element.getContext("2d");
       ctx.setTransform(
-        this.tile_size / LeafletTileSize,
+        this.tile_size / this.protomaps_tile_size,
         0,
         0,
-        this.tile_size / LeafletTileSize,
+        this.tile_size / this.protomaps_tile_size,
         0,
         0
       );
-      ctx.clearRect(0, 0, LeafletTileSize, LeafletTileSize);
+      ctx.clearRect(0, 0, this.protomaps_tile_size, this.protomaps_tile_size);
 
       if (this.backgroundColor) {
         ctx.save();
         ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, LeafletTileSize, LeafletTileSize);
+        ctx.fillRect(0, 0, this.protomaps_tile_size, this.protomaps_tile_size);
         ctx.restore();
       }
 
