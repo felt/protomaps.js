@@ -4827,7 +4827,7 @@ var labelRules = (params, shade, language1, language2) => {
 };
 
 // src/frontends/leaflet.ts
-var LeafletTileSize = 256;
+var DefaultLeafletTileSize = 256;
 var timer = (duration) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -4870,7 +4870,8 @@ var leafletLayer = (options) => {
         });
       };
       this.labelers = new Labelers(this.scratch, this.label_rules, 16, this.onTilesInvalidated);
-      this.tile_size = LeafletTileSize * window.devicePixelRatio;
+      this.protomaps_tile_size = options2.tile_size || DefaultLeafletTileSize;
+      this.tile_size = this.protomaps_tile_size * window.devicePixelRatio;
       this.tileDelay = options2.tileDelay || 3;
       this.lang = options2.lang;
       this.inspector = this.inspect(this);
@@ -4938,12 +4939,12 @@ var leafletLayer = (options) => {
         element.width = this.tile_size;
         element.height = this.tile_size;
         let ctx = element.getContext("2d");
-        ctx.setTransform(this.tile_size / LeafletTileSize, 0, 0, this.tile_size / LeafletTileSize, 0, 0);
-        ctx.clearRect(0, 0, LeafletTileSize, LeafletTileSize);
+        ctx.setTransform(this.tile_size / this.protomaps_tile_size, 0, 0, this.tile_size / this.protomaps_tile_size, 0, 0);
+        ctx.clearRect(0, 0, this.protomaps_tile_size, this.protomaps_tile_size);
         if (this.backgroundColor) {
           ctx.save();
           ctx.fillStyle = this.backgroundColor;
-          ctx.fillRect(0, 0, LeafletTileSize, LeafletTileSize);
+          ctx.fillRect(0, 0, this.protomaps_tile_size, this.protomaps_tile_size);
           ctx.restore();
         }
         var painting_time = 0;
