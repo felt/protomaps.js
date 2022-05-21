@@ -116,7 +116,7 @@ function parseTile(buffer, tileSize) {
     return result;
 }
 export class PmtilesSource {
-    constructor(url, shouldCancelZooms) {
+    constructor(url, shouldCancelZooms, headers) {
         if (url.url) {
             this.p = url;
         }
@@ -125,6 +125,7 @@ export class PmtilesSource {
         }
         this.controllers = [];
         this.shouldCancelZooms = shouldCancelZooms;
+        this.headers = headers || {};
     }
     get(c, tileSize) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -145,9 +146,7 @@ export class PmtilesSource {
             const signal = controller.signal;
             return new Promise((resolve, reject) => {
                 fetch(this.p.url, {
-                    headers: {
-                        Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1),
-                    },
+                    headers: Object.assign(Object.assign({}, this.headers), { Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1) }),
                     signal: signal,
                 })
                     .then((resp) => {
@@ -165,10 +164,11 @@ export class PmtilesSource {
     }
 }
 export class ZxySource {
-    constructor(url, shouldCancelZooms) {
+    constructor(url, shouldCancelZooms, headers) {
         this.url = url;
         this.controllers = [];
         this.shouldCancelZooms = shouldCancelZooms;
+        this.headers = headers || {};
     }
     get(c, tileSize) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -189,7 +189,10 @@ export class ZxySource {
             this.controllers.push([c.z, controller]);
             const signal = controller.signal;
             return new Promise((resolve, reject) => {
-                fetch(url, { signal: signal })
+                fetch(url, {
+                    headers: Object.assign({}, this.headers),
+                    signal: signal,
+                })
                     .then((resp) => {
                     return resp.arrayBuffer();
                 })

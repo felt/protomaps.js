@@ -3303,7 +3303,7 @@ var protomaps = (() => {
     return result;
   }
   var PmtilesSource = class {
-    constructor(url, shouldCancelZooms) {
+    constructor(url, shouldCancelZooms, headers) {
       if (url.url) {
         this.p = url;
       } else {
@@ -3311,6 +3311,7 @@ var protomaps = (() => {
       }
       this.controllers = [];
       this.shouldCancelZooms = shouldCancelZooms;
+      this.headers = headers || {};
     }
     get(c2, tileSize) {
       return __async(this, null, function* () {
@@ -3331,9 +3332,9 @@ var protomaps = (() => {
         const signal = controller.signal;
         return new Promise((resolve, reject) => {
           fetch(this.p.url, {
-            headers: {
+            headers: __spreadProps(__spreadValues({}, this.headers), {
               Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1)
-            },
+            }),
             signal
           }).then((resp) => {
             return resp.arrayBuffer();
@@ -3348,10 +3349,11 @@ var protomaps = (() => {
     }
   };
   var ZxySource = class {
-    constructor(url, shouldCancelZooms) {
+    constructor(url, shouldCancelZooms, headers) {
       this.url = url;
       this.controllers = [];
       this.shouldCancelZooms = shouldCancelZooms;
+      this.headers = headers || {};
     }
     get(c2, tileSize) {
       return __async(this, null, function* () {
@@ -3369,7 +3371,10 @@ var protomaps = (() => {
         this.controllers.push([c2.z, controller]);
         const signal = controller.signal;
         return new Promise((resolve, reject) => {
-          fetch(url, { signal }).then((resp) => {
+          fetch(url, {
+            headers: __spreadValues({}, this.headers),
+            signal
+          }).then((resp) => {
             return resp.arrayBuffer();
           }).then((buffer) => {
             let result = parseTile(buffer, tileSize);
@@ -3777,11 +3782,11 @@ var protomaps = (() => {
     const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
     let source;
     if (o2.url.url) {
-      source = new PmtilesSource(o2.url, true);
+      source = new PmtilesSource(o2.url, true, o2.headers);
     } else if (o2.url.endsWith(".pmtiles")) {
-      source = new PmtilesSource(o2.url, true);
+      source = new PmtilesSource(o2.url, true, o2.headers);
     } else {
-      source = new ZxySource(o2.url, true);
+      source = new ZxySource(o2.url, true, o2.headers);
     }
     const cache = new TileCache(source, 256 * 1 << level_diff);
     return new View(cache, maxDataZoom, level_diff);
