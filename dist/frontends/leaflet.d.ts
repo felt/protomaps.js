@@ -1,5 +1,8 @@
 export declare type DataSourceOptions = {
     url: string;
+    headers?: {
+        [key: string]: string;
+    };
     maxDataZoom?: number;
     levelDiff?: number;
 };
