@@ -147,8 +147,13 @@ export class PmtilesSource implements TileSource {
   p: PMTiles;
   controllers: any[];
   shouldCancelZooms: boolean;
+  headers: { [key: string]: string };
 
-  constructor(url: any, shouldCancelZooms: boolean) {
+  constructor(
+    url: any,
+    shouldCancelZooms: boolean,
+    headers: { [key: string]: string }
+  ) {
     if (url.url) {
       this.p = url;
     } else {
@@ -156,6 +161,7 @@ export class PmtilesSource implements TileSource {
     }
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
+    this.headers = headers || {};
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -177,6 +183,7 @@ export class PmtilesSource implements TileSource {
     return new Promise((resolve, reject) => {
       fetch(this.p.url, {
         headers: {
+          ...this.headers,
           Range: "bytes=" + result[0] + "-" + (result[0] + result[1] - 1),
         },
         signal: signal,
@@ -199,11 +206,17 @@ export class ZxySource implements TileSource {
   url: string;
   controllers: any[];
   shouldCancelZooms: boolean;
+  headers: { [key: string]: string };
 
-  constructor(url: string, shouldCancelZooms: boolean) {
+  constructor(
+    url: string,
+    shouldCancelZooms: boolean,
+    headers: { [key: string]: string }
+  ) {
     this.url = url;
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
+    this.headers = headers || {};
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -224,7 +237,12 @@ export class ZxySource implements TileSource {
     this.controllers.push([c.z, controller]);
     const signal = controller.signal;
     return new Promise((resolve, reject) => {
-      fetch(url, { signal: signal })
+      fetch(url, {
+        headers: {
+          ...this.headers,
+        },
+        signal: signal,
+      })
         .then((resp) => {
           return resp.arrayBuffer();
         })

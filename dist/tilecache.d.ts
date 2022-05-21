@@ -32,14 +32,24 @@ export declare class PmtilesSource implements TileSource {
     p: PMTiles;
     controllers: any[];
     shouldCancelZooms: boolean;
-    constructor(url: any, shouldCancelZooms: boolean);
+    headers: {
+        [key: string]: string;
+    };
+    constructor(url: any, shouldCancelZooms: boolean, headers: {
+        [key: string]: string;
+    });
     get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>>;
 }
 export declare class ZxySource implements TileSource {
     url: string;
     controllers: any[];
     shouldCancelZooms: boolean;
-    constructor(url: string, shouldCancelZooms: boolean);
+    headers: {
+        [key: string]: string;
+    };
+    constructor(url: string, shouldCancelZooms: boolean, headers: {
+        [key: string]: string;
+    });
     get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>>;
 }
 export interface CacheEntry {
