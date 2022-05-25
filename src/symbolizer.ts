@@ -196,7 +196,7 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
     let verticesInPath = 0;
     ctx.save();
     ctx.beginPath();
-    for (const feature of features) {
+    features.forEach((feature) => {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((poly) => {
@@ -213,7 +213,7 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
           verticesInPath += poly.length;
         });
       }
-    }
+    });
     drawPath();
     ctx.restore();
   }
@@ -447,7 +447,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
     ctx.save();
     setStyle(z);
     ctx.beginPath();
-    for (const feature of features) {
+    features.forEach((feature) => {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((ls) => {
@@ -464,7 +464,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
           verticesInPath += ls.length;
         });
       }
-    }
+    });
     ctx.stroke();
     ctx.restore();
   }

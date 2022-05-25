@@ -2245,7 +2245,7 @@ var GroupedPolygonSymbolizer = class {
     let verticesInPath = 0;
     ctx.save();
     ctx.beginPath();
-    for (const feature of features) {
+    features.forEach((feature) => {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((poly) => {
@@ -2262,7 +2262,7 @@ var GroupedPolygonSymbolizer = class {
           verticesInPath += poly.length;
         });
       }
-    }
+    });
     drawPath();
     ctx.restore();
   }
@@ -2431,7 +2431,7 @@ var GroupedLineSymbolizer = class {
     ctx.save();
     setStyle(z2);
     ctx.beginPath();
-    for (const feature of features) {
+    features.forEach((feature) => {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((ls) => {
@@ -2448,7 +2448,7 @@ var GroupedLineSymbolizer = class {
           verticesInPath += ls.length;
         });
       }
-    }
+    });
     ctx.stroke();
     ctx.restore();
   }
