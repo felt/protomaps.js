@@ -2249,7 +2249,7 @@ var GroupedPolygonSymbolizer = class {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((poly) => {
-          if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+          if (verticesInPath + poly.length > Infinity) {
             drawPath();
             ctx.beginPath();
             verticesInPath = 0;
