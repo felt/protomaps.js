@@ -126,23 +126,41 @@ export class GroupedPolygonSymbolizer {
         let verticesInPath = 0;
         ctx.save();
         ctx.beginPath();
+        const holesToRender = [];
         for (const feature of features) {
             if (inside(feature) && filter(feature)) {
                 const geom = transform(feature.geom);
-                geom.forEach((poly) => {
-                    if (verticesInPath + poly.length > Infinity) {
-                        drawPath();
-                        ctx.beginPath();
-                        verticesInPath = 0;
-                    }
-                    ctx.moveTo(poly[0].x, poly[0].y);
-                    for (var p = 1; p < poly.length; p++) {
-                        let pt = poly[p];
-                        ctx.lineTo(pt.x, pt.y);
-                    }
-                    verticesInPath += poly.length;
-                });
+                const poly = geom[0];
+                holesToRender.push(...geom.slice(1));
+                if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+                    drawPath();
+                    ctx.beginPath();
+                    verticesInPath = 0;
+                }
+                ctx.moveTo(poly[0].x, poly[0].y);
+                for (var p = 1; p < poly.length; p++) {
+                    let pt = poly[p];
+                    ctx.lineTo(pt.x, pt.y);
+                }
+                verticesInPath += poly.length;
             }
+        }
+        drawPath();
+        ctx.beginPath();
+        verticesInPath = 0;
+        for (const hole of holesToRender) {
+            const poly = hole;
+            if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+                drawPath();
+                ctx.beginPath();
+                verticesInPath = 0;
+            }
+            ctx.moveTo(poly[0].x, poly[0].y);
+            for (var p = 1; p < poly.length; p++) {
+                let pt = poly[p];
+                ctx.lineTo(pt.x, pt.y);
+            }
+            verticesInPath += poly.length;
         }
         drawPath();
         ctx.restore();
