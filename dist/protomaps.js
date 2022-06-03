@@ -2323,19 +2323,20 @@ var protomaps = (() => {
       for (const feature of features) {
         if (inside(feature) && filter(feature)) {
           const geom = transform(feature.geom);
+          const verticesInGeom = geom.reduce((sum, r2) => sum + r2.length, 0);
+          if (verticesInPath + verticesInGeom > MAX_VERTICES_PER_DRAW_CALL) {
+            drawPath();
+            ctx.beginPath();
+            verticesInPath = 0;
+          }
           geom.forEach((poly) => {
-            if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
-              drawPath();
-              ctx.beginPath();
-              verticesInPath = 0;
-            }
             ctx.moveTo(poly[0].x, poly[0].y);
             for (var p2 = 1; p2 < poly.length; p2++) {
               let pt = poly[p2];
               ctx.lineTo(pt.x, pt.y);
             }
-            verticesInPath += poly.length;
           });
+          verticesInPath += verticesInGeom;
         }
       }
       drawPath();
