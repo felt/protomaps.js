@@ -2245,41 +2245,24 @@ var GroupedPolygonSymbolizer = class {
     let verticesInPath = 0;
     ctx.save();
     ctx.beginPath();
-    const holesToRender = [];
     for (const feature of features) {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
-        const poly = geom[0];
-        holesToRender.push(...geom.slice(1));
-        if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+        const verticesInGeom = geom.reduce((sum, r2) => sum + r2.length, 0);
+        if (verticesInPath + verticesInGeom > MAX_VERTICES_PER_DRAW_CALL) {
           drawPath();
           ctx.beginPath();
           verticesInPath = 0;
         }
-        ctx.moveTo(poly[0].x, poly[0].y);
-        for (var p2 = 1; p2 < poly.length; p2++) {
-          let pt = poly[p2];
-          ctx.lineTo(pt.x, pt.y);
-        }
-        verticesInPath += poly.length;
+        geom.forEach((poly) => {
+          ctx.moveTo(poly[0].x, poly[0].y);
+          for (var p2 = 1; p2 < poly.length; p2++) {
+            let pt = poly[p2];
+            ctx.lineTo(pt.x, pt.y);
+          }
+        });
+        verticesInPath += verticesInGeom;
       }
-    }
-    drawPath();
-    ctx.beginPath();
-    verticesInPath = 0;
-    for (const hole of holesToRender) {
-      const poly = hole;
-      if (verticesInPath + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
-        drawPath();
-        ctx.beginPath();
-        verticesInPath = 0;
-      }
-      ctx.moveTo(poly[0].x, poly[0].y);
-      for (var p2 = 1; p2 < poly.length; p2++) {
-        let pt = poly[p2];
-        ctx.lineTo(pt.x, pt.y);
-      }
-      verticesInPath += poly.length;
     }
     drawPath();
     ctx.restore();
