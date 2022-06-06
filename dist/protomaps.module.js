@@ -3714,11 +3714,11 @@ var sourceToView = (o2) => {
   const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
   let source;
   if (o2.url.url) {
-    source = new PmtilesSource(o2.url, true, o2.headers);
+    source = new PmtilesSource(o2.url, true, o2.headers, o2.subdomains);
   } else if (o2.url.endsWith(".pmtiles")) {
-    source = new PmtilesSource(o2.url, true, o2.headers);
+    source = new PmtilesSource(o2.url, true, o2.headers, o2.subdomains);
   } else {
-    source = new ZxySource(o2.url, true, o2.headers);
+    source = new ZxySource(o2.url, true, o2.headers, o2.subdomains);
   }
   const cache = new TileCache(source, 256 * 1 << level_diff);
   return new View(cache, maxDataZoom, level_diff);
