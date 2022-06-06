@@ -116,7 +116,7 @@ function parseTile(buffer, tileSize) {
     return result;
 }
 export class PmtilesSource {
-    constructor(url, shouldCancelZooms, headers) {
+    constructor(url, shouldCancelZooms, headers, subdomains = ["a", "b", "c"]) {
         if (url.url) {
             this.p = url;
         }
@@ -126,6 +126,7 @@ export class PmtilesSource {
         this.controllers = [];
         this.shouldCancelZooms = shouldCancelZooms;
         this.headers = headers || {};
+        this.subdomains = subdomains;
     }
     get(c, tileSize) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -164,11 +165,12 @@ export class PmtilesSource {
     }
 }
 export class ZxySource {
-    constructor(url, shouldCancelZooms, headers) {
+    constructor(url, shouldCancelZooms, headers, subdomains = ["a", "b", "c"]) {
         this.url = url;
         this.controllers = [];
         this.shouldCancelZooms = shouldCancelZooms;
         this.headers = headers || {};
+        this.subdomains = subdomains;
     }
     get(c, tileSize) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -182,6 +184,7 @@ export class ZxySource {
                 });
             }
             let url = this.url
+                .replace("{s}", this.getSubdomain(c))
                 .replace("{z}", c.z.toString())
                 .replace("{x}", c.x.toString())
                 .replace("{y}", c.y.toString());
@@ -205,6 +208,10 @@ export class ZxySource {
                 });
             });
         });
+    }
+    getSubdomain(tileIndex) {
+        var index = Math.abs(tileIndex.x + tileIndex.y) % this.subdomains.length;
+        return this.subdomains[index];
     }
 }
 let R = 6378137;

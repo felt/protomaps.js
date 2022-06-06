@@ -274,11 +274,11 @@ export const sourceToView = (o: any) => {
   const maxDataZoom = o.maxDataZoom === undefined ? 14 : o.maxDataZoom;
   let source;
   if (o.url.url) {
-    source = new PmtilesSource(o.url, true, o.headers);
+    source = new PmtilesSource(o.url, true, o.headers, o.subdomains);
   } else if (o.url.endsWith(".pmtiles")) {
-    source = new PmtilesSource(o.url, true, o.headers);
+    source = new PmtilesSource(o.url, true, o.headers, o.subdomains);
   } else {
-    source = new ZxySource(o.url, true, o.headers);
+    source = new ZxySource(o.url, true, o.headers, o.subdomains);
   }
   const cache = new TileCache(source, (256 * 1) << level_diff);
   return new View(cache, maxDataZoom, level_diff);

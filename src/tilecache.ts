@@ -148,11 +148,13 @@ export class PmtilesSource implements TileSource {
   controllers: any[];
   shouldCancelZooms: boolean;
   headers: { [key: string]: string };
+  subdomains: string[];
 
   constructor(
     url: any,
     shouldCancelZooms: boolean,
-    headers: { [key: string]: string }
+    headers: { [key: string]: string },
+    subdomains = ["a", "b", "c"]
   ) {
     if (url.url) {
       this.p = url;
@@ -162,6 +164,7 @@ export class PmtilesSource implements TileSource {
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
+    this.subdomains = subdomains;
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -207,16 +210,19 @@ export class ZxySource implements TileSource {
   controllers: any[];
   shouldCancelZooms: boolean;
   headers: { [key: string]: string };
+  subdomains: string[];
 
   constructor(
     url: string,
     shouldCancelZooms: boolean,
-    headers: { [key: string]: string }
+    headers: { [key: string]: string },
+    subdomains = ["a", "b", "c"]
   ) {
     this.url = url;
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
+    this.subdomains = subdomains;
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -230,6 +236,7 @@ export class ZxySource implements TileSource {
       });
     }
     let url = this.url
+      .replace("{s}", this.getSubdomain(c))
       .replace("{z}", c.z.toString())
       .replace("{x}", c.x.toString())
       .replace("{y}", c.y.toString());
@@ -254,6 +261,11 @@ export class ZxySource implements TileSource {
           reject(e);
         });
     });
+  }
+
+  private getSubdomain(tileIndex: Zxy) {
+    var index = Math.abs(tileIndex.x + tileIndex.y) % this.subdomains.length;
+    return this.subdomains[index];
   }
 }
 

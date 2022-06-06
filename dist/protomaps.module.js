@@ -3229,7 +3229,7 @@ function parseTile(buffer, tileSize) {
   return result;
 }
 var PmtilesSource = class {
-  constructor(url, shouldCancelZooms, headers) {
+  constructor(url, shouldCancelZooms, headers, subdomains = ["a", "b", "c"]) {
     if (url.url) {
       this.p = url;
     } else {
@@ -3238,6 +3238,7 @@ var PmtilesSource = class {
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
+    this.subdomains = subdomains;
   }
   get(c2, tileSize) {
     return __async(this, null, function* () {
@@ -3275,11 +3276,12 @@ var PmtilesSource = class {
   }
 };
 var ZxySource = class {
-  constructor(url, shouldCancelZooms, headers) {
+  constructor(url, shouldCancelZooms, headers, subdomains = ["a", "b", "c"]) {
     this.url = url;
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
+    this.subdomains = subdomains;
   }
   get(c2, tileSize) {
     return __async(this, null, function* () {
@@ -3292,7 +3294,7 @@ var ZxySource = class {
           return true;
         });
       }
-      let url = this.url.replace("{z}", c2.z.toString()).replace("{x}", c2.x.toString()).replace("{y}", c2.y.toString());
+      let url = this.url.replace("{s}", this.getSubdomain(c2)).replace("{z}", c2.z.toString()).replace("{x}", c2.x.toString()).replace("{y}", c2.y.toString());
       const controller = new AbortController();
       this.controllers.push([c2.z, controller]);
       const signal = controller.signal;
@@ -3310,6 +3312,10 @@ var ZxySource = class {
         });
       });
     });
+  }
+  getSubdomain(tileIndex) {
+    var index = Math.abs(tileIndex.x + tileIndex.y) % this.subdomains.length;
+    return this.subdomains[index];
   }
 };
 var R = 6378137;
@@ -3708,11 +3714,11 @@ var sourceToView = (o2) => {
   const maxDataZoom = o2.maxDataZoom === void 0 ? 14 : o2.maxDataZoom;
   let source;
   if (o2.url.url) {
-    source = new PmtilesSource(o2.url, true, o2.headers);
+    source = new PmtilesSource(o2.url, true, o2.headers, o2.subdomains);
   } else if (o2.url.endsWith(".pmtiles")) {
-    source = new PmtilesSource(o2.url, true, o2.headers);
+    source = new PmtilesSource(o2.url, true, o2.headers, o2.subdomains);
   } else {
-    source = new ZxySource(o2.url, true, o2.headers);
+    source = new ZxySource(o2.url, true, o2.headers, o2.subdomains);
   }
   const cache = new TileCache(source, 256 * 1 << level_diff);
   return new View(cache, maxDataZoom, level_diff);
