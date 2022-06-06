@@ -35,9 +35,10 @@ export declare class PmtilesSource implements TileSource {
     headers: {
         [key: string]: string;
     };
+    subdomains: string[];
     constructor(url: any, shouldCancelZooms: boolean, headers: {
         [key: string]: string;
-    });
+    }, subdomains?: string[]);
     get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>>;
 }
 export declare class ZxySource implements TileSource {
@@ -47,10 +48,12 @@ export declare class ZxySource implements TileSource {
     headers: {
         [key: string]: string;
     };
+    subdomains: string[];
     constructor(url: string, shouldCancelZooms: boolean, headers: {
         [key: string]: string;
-    });
+    }, subdomains?: string[]);
     get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>>;
+    private getSubdomain;
 }
 export interface CacheEntry {
     used: number;
