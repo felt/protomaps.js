@@ -45,7 +45,8 @@
     "prettier": "npx prettier --write .",
     "serve": "npx serve .",
     "prepare": "husky install",
-    "semantic-release": "semantic-release"
+    "semantic-release": "semantic-release",
+    "prepublishOnly": "npm run dist"
   },
   "repository": {
     "type": "git",
