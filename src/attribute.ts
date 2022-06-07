@@ -21,13 +21,11 @@ export class StringAttr {
 export class NumberAttr {
   value: number | ((z: number, f?: Feature) => number);
   per_feature: boolean;
-  allowZeroValues: boolean;
 
-  constructor(c: any, defaultValue: number = 1, allowZeroValues = true) {
+  constructor(c: any, defaultValue: number = 1) {
     this.value = c !== undefined && c !== null ? c : defaultValue;
     this.per_feature =
       typeof this.value == "function" && this.value.length == 2;
-    this.allowZeroValues = allowZeroValues;
   }
 
   public get(z: number, f?: Feature): number {
@@ -38,8 +36,7 @@ export class NumberAttr {
       value = this.value;
     }
 
-    if (!this.allowZeroValues && value === 0) return 0.00001;
-    else return value;
+    return value;
   }
 }
 

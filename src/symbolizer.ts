@@ -322,7 +322,7 @@ export class LineSymbolizer implements PaintSymbolizer {
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width, 1, false);
+    this.width = new NumberAttr(options.width, 1);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
@@ -343,7 +343,10 @@ export class LineSymbolizer implements PaintSymbolizer {
   public before(ctx: any, z: number) {
     if (!this.per_feature) {
       ctx.strokeStyle = this.color.get(z);
-      ctx.lineWidth = this.width.get(z);
+      const width = this.width.get(z);
+      this.skip =
+        width === 0 || (this.dash !== null && this.dashWidth.get(z) === 0);
+      ctx.lineWidth = width;
       ctx.globalAlpha = this.opacity.get(z);
       ctx.lineCap = this.lineCap.get(z);
       ctx.lineJoin = this.lineJoin.get(z);
@@ -352,6 +355,12 @@ export class LineSymbolizer implements PaintSymbolizer {
 
   public draw(ctx: any, geom: Point[][], z: number, f: Feature) {
     if (this.skip) return;
+    const widthValue = this.width.get(z, f);
+    if (
+      widthValue === 0 ||
+      (this.dash !== null && this.dashWidth.get(z, f) === 0)
+    )
+      return;
 
     const setStyle = () => {
       if (this.per_feature) {
@@ -365,7 +374,7 @@ export class LineSymbolizer implements PaintSymbolizer {
         ctx.setLineDash(this.dash.get(z, f));
       } else {
         if (this.per_feature) {
-          ctx.lineWidth = this.width.get(z, f);
+          ctx.lineWidth = widthValue;
           ctx.strokeStyle = this.color.get(z, f);
         }
       }
@@ -407,7 +416,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
-    this.width = new NumberAttr(options.width, 1, false);
+    this.width = new NumberAttr(options.width, 1);
     this.opacity = new NumberAttr(options.opacity);
     this.dash = options.dash ? new ArrayAttr(options.dash) : null;
     this.dashColor = new StringAttr(options.dashColor, "black");
@@ -420,7 +429,10 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
 
   public before(ctx: any, z: number) {
     ctx.strokeStyle = this.color.get(z);
-    ctx.lineWidth = this.width.get(z);
+    const width = this.width.get(z);
+    this.skip =
+      width === 0 || (this.dash !== null && this.dashWidth.get(z) === 0);
+    ctx.lineWidth = width;
     ctx.globalAlpha = this.opacity.get(z);
     ctx.lineCap = this.lineCap.get(z);
     ctx.lineJoin = this.lineJoin.get(z);
