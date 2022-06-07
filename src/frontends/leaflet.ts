@@ -529,7 +529,12 @@ const leafletLayer = (options: any): any => {
         }
       });
       dataSources.forEach((d) => {
-        if (!this.views.has(d.name)) {
+        const exists = this.views.has(d.name);
+        if (
+          !exists ||
+          (exists &&
+            this.views.get(d.name).tileCache.source.url !== d.options.url)
+        ) {
           this.views.set(d.name, sourceToView(d.options));
         }
       });
