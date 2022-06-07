@@ -2,4 +2,3 @@ node_modules
 src/**/*.js
 test/*.js
 .tool-versions
-dist/
