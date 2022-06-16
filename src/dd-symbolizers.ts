@@ -15,6 +15,7 @@ export enum TextPlacements {
   SW = 6,
   W = 7,
   NW = 8,
+  Center = 9,
 }
 
 export interface OffsetSymbolizerValues {
@@ -49,6 +50,7 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
       TextPlacements.S,
       TextPlacements.E,
       TextPlacements.W,
+      TextPlacements.Center,
     ];
     this.attrs =
       (options.attrs as DataDrivenFunction) ||
@@ -147,9 +149,13 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
     fb: Bbox,
     placement: TextPlacements
   ) {
-    const labelWidth = fb.maxX;
+    const labelWidth = fb.maxX - fb.minX;
     const labelHalfWidth = labelWidth / 2;
-    if ([TextPlacements.N, TextPlacements.S].includes(placement))
+    if (
+      [TextPlacements.N, TextPlacements.S, TextPlacements.Center].includes(
+        placement
+      )
+    )
       return offsetX - labelHalfWidth;
     if (
       [TextPlacements.NW, TextPlacements.W, TextPlacements.SW].includes(
@@ -168,7 +174,11 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
     const labelHalfHeight = Math.abs(fb.minY);
     const labelBottom = fb.maxY;
     const labelCenterHeight = (fb.minY + fb.maxY) / 2;
-    if ([TextPlacements.E, TextPlacements.W].includes(placement))
+    if (
+      [TextPlacements.E, TextPlacements.W, TextPlacements.Center].includes(
+        placement
+      )
+    )
       return offsetY - labelCenterHeight;
     if (
       [TextPlacements.NW, TextPlacements.NE, TextPlacements.N].includes(
