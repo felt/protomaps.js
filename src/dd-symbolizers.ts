@@ -197,7 +197,11 @@ export class DataDrivenOffsetSymbolizer implements LabelSymbolizer {
 
   private computeJustify(fixedJustify: Justify, placement: TextPlacements) {
     if (fixedJustify) return fixedJustify;
-    if ([TextPlacements.N, TextPlacements.S].includes(placement))
+    if (
+      [TextPlacements.N, TextPlacements.S, TextPlacements.Center].includes(
+        placement
+      )
+    )
       return Justify.Center;
     if (
       [TextPlacements.NE, TextPlacements.E, TextPlacements.SE].includes(
