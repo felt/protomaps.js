@@ -11,7 +11,7 @@ import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { LabelPickedFeature, PickedFeature } from "../tilecache";
-import { BasemapLayerSourceName } from "..";
+import { BasemapLayerSourceName, Bbox } from "..";
 
 const DefaultLeafletTileSize = 256;
 
@@ -540,6 +540,20 @@ const leafletLayer = (options: any): any => {
         }
       });
       this.fire(ProtomapsEvent.DataSourcesUpdated);
+    }
+
+    public getSourceFeatures(
+      sourceName: string,
+      display_zoom: number,
+      bounds: Bbox
+    ): Promise<Array<PreparedTile>> {
+      const view = this.views.get(sourceName);
+      if (!view) return Promise.resolve([]);
+      return view.getBbox(display_zoom, bounds);
+    }
+
+    public hasDataSource(name: string): boolean {
+      return this.views.has(name);
     }
 
     private subscribeChildEvents() {
