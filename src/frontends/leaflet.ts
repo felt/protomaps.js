@@ -538,6 +538,7 @@ const leafletLayer = (options: any): any => {
           this.views.set(d.name, sourceToView(d.options));
         }
       });
+      this.fire(ProtomapsEvent.DataSourcesUpdated);
     }
 
     private subscribeChildEvents() {

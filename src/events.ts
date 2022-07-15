@@ -5,6 +5,7 @@ export enum ProtomapsEvent {
   TileFetchEnd = "tile-fetch-end",
   RerenderStart = "rerender-start",
   RerenderEnd = "rerender-end",
+  DataSourcesUpdated = "data-sources-updated",
 }
 
 export class EventQueue {
