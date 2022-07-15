@@ -47,6 +47,7 @@ export type DataSourceOptions = {
   headers?: { [key: string]: string };
   maxDataZoom?: number;
   levelDiff?: number;
+  shouldCancelZooms?: boolean;
 };
 export type DataSource = {
   name: string;
