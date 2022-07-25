@@ -100,6 +100,13 @@ export class Index {
     this.maxLabeledTiles = maxLabeledTiles;
   }
 
+  public hasPrefix(tileKey: string): boolean {
+    for (let key of this.current.keys()) {
+      if (key.startsWith(tileKey)) return true;
+    }
+    return false;
+  }
+
   public has(tileKey: string): boolean {
     return this.current.has(tileKey);
   }
@@ -456,7 +463,7 @@ export class Labeler {
   ) {
     let touched = covering(this.z, dim, bbox);
     for (let s of touched) {
-      if (s.key != key && this.index.has(s.key)) {
+      if (s.key != key && this.index.hasPrefix(s.key)) {
         tiles_invalidated.add(s.display);
       }
     }
