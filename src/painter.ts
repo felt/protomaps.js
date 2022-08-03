@@ -26,8 +26,8 @@ export interface Rule {
   extra?: any;
 }
 
-const isFeatureInTile = (
-  f: Feature,
+export const isFeatureInTile = (
+  f: { bbox: Bbox },
   scaleFactor: number,
   origin: Point,
   tileBbox: Bbox
