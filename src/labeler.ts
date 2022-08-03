@@ -5,7 +5,7 @@ import { Zxy, toIndex, Bbox } from "./tilecache";
 // @ts-ignore
 import RBush from "rbush";
 import { LabelSymbolizer, DrawExtra } from "./symbolizer";
-import { Filter } from "./painter";
+import { Filter, isFeatureInTile } from "./painter";
 
 type TileInvalidationCallback = (tiles: Set<string>) => void;
 
@@ -98,6 +98,13 @@ export class Index {
     this.current = new Map();
     this.dim = dim;
     this.maxLabeledTiles = maxLabeledTiles;
+  }
+
+  public hasPrefix(tileKey: string): boolean {
+    for (let key of this.current.keys()) {
+      if (key.startsWith(tileKey)) return true;
+    }
+    return false;
   }
 
   public has(tileKey: string): boolean {
@@ -301,6 +308,15 @@ export class Index {
   }
 }
 
+const getTileBbox = (origin: Point, dim: number) => {
+  return {
+    minX: origin.x,
+    minY: origin.y,
+    maxX: origin.x + dim,
+    maxY: origin.y + dim,
+  };
+};
+
 export class Labeler {
   index: Index;
   z: number;
@@ -368,6 +384,8 @@ export class Labeler {
         overzoom: this.z - pt.data_tile.z,
       };
       for (let feature of feats) {
+        const bbox = getTileBbox({ x: 0, y: 0 }, pt.dim);
+        if (!isFeatureInTile(feature, 1, { x: 0, y: 0 }, bbox)) continue;
         if (rule.filter && !rule.filter(this.z, feature)) continue;
         let transformed = transformGeom(feature.geom, pt.scale, pt.origin);
         let labels = rule.symbolizer.place(layout, transformed, feature);
@@ -445,7 +463,7 @@ export class Labeler {
   ) {
     let touched = covering(this.z, dim, bbox);
     for (let s of touched) {
-      if (s.key != key && this.index.has(s.key)) {
+      if (s.key != key && this.index.hasPrefix(s.key)) {
         tiles_invalidated.add(s.display);
       }
     }
