@@ -974,6 +974,7 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
   position: LineLabelPlacement;
   maxLabelCodeUnits: NumberAttr;
   repeatDistance: NumberAttr;
+  minLabeableDim: NumberAttr;
 
   constructor(options: any) {
     this.font = new FontAttr(options);
@@ -986,6 +987,7 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
     this.position = options.position || LineLabelPlacement.Above;
     this.maxLabelCodeUnits = new NumberAttr(options.maxLabelChars, 40);
     this.repeatDistance = new NumberAttr(options.repeatDistance, 250);
+    this.minLabeableDim = new NumberAttr(options.minLabeableDim, 20);
   }
 
   public place(layout: Layout, geom: Point[][], feature: Feature) {
@@ -994,11 +996,11 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
     if (name.length > this.maxLabelCodeUnits.get(layout.zoom, feature))
       return undefined;
 
-    let MIN_LABELABLE_DIM = 20;
     let fbbox = feature.bbox;
+    const minLabeableDim = this.minLabeableDim.get(layout.zoom);
     if (
-      fbbox.maxY - fbbox.minY < MIN_LABELABLE_DIM &&
-      fbbox.maxX - fbbox.minX < MIN_LABELABLE_DIM
+      fbbox.maxY - fbbox.minY < minLabeableDim &&
+      fbbox.maxX - fbbox.minX < minLabeableDim
     )
       return undefined;
 
