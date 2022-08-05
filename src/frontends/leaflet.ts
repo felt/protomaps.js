@@ -386,7 +386,7 @@ const leafletLayer = (options: any): any => {
             });
           }
         }
-        const features = this.getRenderedFeatures(featuresPerLayer);
+        const features = this.getRenderedFeatures(featuresPerLayer, sourceName);
         let labelArray: LabelPickedFeature[] =
           labelFeaturesPerSource[sourceName] || [];
         featuresBySourceName.set(sourceName, {
@@ -397,12 +397,22 @@ const leafletLayer = (options: any): any => {
       return featuresBySourceName;
     }
 
-    private getRenderedFeatures(featuresPerLayer: {
-      [key: string]: PickedFeature[];
-    }): PickedFeature[] {
+    private getRenderedFeatures(
+      featuresPerLayer: {
+        [key: string]: PickedFeature[];
+      },
+      sourceName: string
+    ): PickedFeature[] {
       const z = this._map.getZoom();
       const features = [];
       for (let rule of this.paint_rules) {
+        const isSrcBasemap =
+          sourceName === BasemapLayerSourceName &&
+          rule.dataSource === undefined;
+        if (rule.dataSource !== sourceName && !isSrcBasemap) {
+          // Omit rules that apply to a different source
+          continue;
+        }
         if (rule.minzoom && z < rule.minzoom) continue;
         if (rule.maxzoom && z > rule.maxzoom) continue;
 
@@ -434,17 +444,20 @@ const leafletLayer = (options: any): any => {
       if (view) {
         const feature = view.queryFeature(dataLayer, id);
         if (feature) {
-          const features = this.getRenderedFeatures({
-            [dataLayer]: [
-              {
-                feature: feature,
-                layerName: dataLayer,
-                tileX: 0,
-                tileY: 0,
-                zoom: 0,
-              },
-            ],
-          });
+          const features = this.getRenderedFeatures(
+            {
+              [dataLayer]: [
+                {
+                  feature: feature,
+                  layerName: dataLayer,
+                  tileX: 0,
+                  tileY: 0,
+                  zoom: 0,
+                },
+              ],
+            },
+            srcName
+          );
           if (features.length !== 0) return features[0];
         }
       }
