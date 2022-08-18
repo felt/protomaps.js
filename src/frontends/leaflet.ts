@@ -11,7 +11,7 @@ import { dark } from "../default_style/dark";
 import { paintRules, labelRules } from "../default_style/style";
 import { ProtomapsEvent } from "../events";
 import { LabelPickedFeature, PickedFeature } from "../tilecache";
-import { BasemapLayerSourceName, Bbox } from "..";
+import { BasemapLayerSourceName, Bbox, Feature } from "..";
 
 const DefaultLeafletTileSize = 256;
 
@@ -442,23 +442,25 @@ const leafletLayer = (options: any): any => {
     public queryFeature(srcName: string, dataLayer: string, id: number) {
       const view = this.views.get(srcName);
       if (view) {
-        const feature = view.queryFeature(dataLayer, id);
-        if (feature) {
-          const features = this.getRenderedFeatures(
+        const features = view.queryFeature(dataLayer, id);
+        if (features.length !== 0) {
+          const renderedFeatures = this.getRenderedFeatures(
             {
-              [dataLayer]: [
-                {
-                  feature: feature,
-                  layerName: dataLayer,
-                  tileX: 0,
-                  tileY: 0,
-                  zoom: 0,
-                },
-              ],
+              [dataLayer]: features.map(
+                (f: { feature: Feature; tileIndex: number[] }) => {
+                  return {
+                    feature: f.feature,
+                    layerName: dataLayer,
+                    tileX: f.tileIndex[0],
+                    tileY: f.tileIndex[1],
+                    zoom: f.tileIndex[2],
+                  };
+                }
+              ),
             },
             srcName
           );
-          if (features.length !== 0) return features[0];
+          return renderedFeatures;
         }
       }
     }

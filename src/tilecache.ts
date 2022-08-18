@@ -461,7 +461,7 @@ export class TileCache {
   }
 
   public queryFeature(dataLayer: string, id: number) {
-    let feature = null;
+    let features: { feature: Feature; tileIndex: number[] }[] = [];
     let tileIndex = [0, 0, 0];
     for (const [tile, entry] of this.cache.entries()) {
       const index = tile.split(":").map((i) => parseInt(i));
@@ -469,13 +469,13 @@ export class TileCache {
         const featureInTile = (entry.data.get(dataLayer) || []).find(
           (f) => f.id === id
         );
-        if (featureInTile && index[2] > tileIndex[2]) {
-          feature = featureInTile;
+        if (featureInTile !== undefined && index[2] > tileIndex[2]) {
+          features.push({ feature: featureInTile, tileIndex: index });
           tileIndex = index;
         }
       }
     }
-    return feature;
+    return features;
   }
 
   public async get(c: Zxy): Promise<Map<string, Feature[]>> {
