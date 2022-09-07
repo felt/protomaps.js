@@ -976,6 +976,7 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
   maxLabelCodeUnits: NumberAttr;
   repeatDistance: NumberAttr;
   minLabeableDim: NumberAttr;
+  shouldScaleRepeatDistance: boolean;
 
   constructor(options: any) {
     this.font = new FontAttr(options);
@@ -989,6 +990,7 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
     this.maxLabelCodeUnits = new NumberAttr(options.maxLabelChars, 40);
     this.repeatDistance = new NumberAttr(options.repeatDistance, 250);
     this.minLabeableDim = new NumberAttr(options.minLabeableDim, 20);
+    this.shouldScaleRepeatDistance = options.shouldScaleRepeatDistance ?? true;
   }
 
   public place(layout: Layout, geom: Point[][], feature: Feature) {
@@ -1013,7 +1015,8 @@ export class LineLabelSymbolizer implements LabelSymbolizer {
       metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
 
     var repeatDistance = this.repeatDistance.get(layout.zoom, feature);
-    if (layout.overzoom > 4) repeatDistance *= 1 << (layout.overzoom - 4);
+    if (this.shouldScaleRepeatDistance && layout.overzoom > 4)
+      repeatDistance *= 1 << (layout.overzoom - 4);
 
     let cell_size = height * 2;
 
