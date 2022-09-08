@@ -78,6 +78,7 @@ export class PolygonSymbolizer implements PaintSymbolizer {
   width: NumberAttr;
   per_feature: boolean;
   do_stroke: boolean;
+  shouldSplit: boolean;
 
   constructor(options: any) {
     this.pattern = options.pattern;
@@ -92,6 +93,7 @@ export class PolygonSymbolizer implements PaintSymbolizer {
       this.width.per_feature ||
       options.per_feature;
     this.do_stroke = false;
+    this.shouldSplit = options.shouldSplit ?? false;
   }
 
   public before(ctx: any, z: number) {
@@ -132,7 +134,10 @@ export class PolygonSymbolizer implements PaintSymbolizer {
     var vertices_in_path = 0;
     ctx.beginPath();
     for (var poly of geom) {
-      if (vertices_in_path + poly.length > MAX_VERTICES_PER_DRAW_CALL) {
+      if (
+        vertices_in_path + poly.length > MAX_VERTICES_PER_DRAW_CALL &&
+        this.shouldSplit
+      ) {
         drawPath();
         vertices_in_path = 0;
         ctx.beginPath();
@@ -155,6 +160,7 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
   stroke: StringAttr;
   width: NumberAttr;
   do_stroke: boolean;
+  shouldSplit: boolean;
 
   constructor(options: any) {
     this.pattern = options.pattern;
@@ -163,6 +169,7 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
     this.stroke = new StringAttr(options.stroke, "black");
     this.width = new NumberAttr(options.width, 0);
     this.do_stroke = false;
+    this.shouldSplit = options.shouldSplit ?? false;
   }
 
   public before(ctx: any, z: number) {
@@ -200,7 +207,10 @@ export class GroupedPolygonSymbolizer implements PaintSymbolizer {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         const verticesInGeom = geom.reduce((sum, r) => sum + r.length, 0);
-        if (verticesInPath + verticesInGeom > MAX_VERTICES_PER_DRAW_CALL) {
+        if (
+          verticesInPath + verticesInGeom > MAX_VERTICES_PER_DRAW_CALL &&
+          this.shouldSplit
+        ) {
           drawPath();
           ctx.beginPath();
           verticesInPath = 0;
@@ -319,6 +329,7 @@ export class LineSymbolizer implements PaintSymbolizer {
   per_feature: boolean;
   lineCap: StringAttr;
   lineJoin: StringAttr;
+  shouldSplit: boolean;
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
@@ -338,6 +349,7 @@ export class LineSymbolizer implements PaintSymbolizer {
       this.lineCap.per_feature ||
       this.lineJoin.per_feature ||
       options.per_feature;
+    this.shouldSplit = options.shouldSplit ?? false;
   }
 
   public before(ctx: any, z: number) {
@@ -385,7 +397,10 @@ export class LineSymbolizer implements PaintSymbolizer {
     ctx.beginPath();
     setStyle();
     for (var ls of geom) {
-      if (vertices_in_path + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+      if (
+        vertices_in_path + ls.length > MAX_VERTICES_PER_DRAW_CALL &&
+        this.shouldSplit
+      ) {
         ctx.stroke();
         vertices_in_path = 0;
         ctx.beginPath();
@@ -413,6 +428,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
   per_feature: boolean;
   lineCap: StringAttr;
   lineJoin: StringAttr;
+  shouldSplit: boolean;
 
   constructor(options: any) {
     this.color = new StringAttr(options.color, "black");
@@ -425,6 +441,7 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
     this.lineJoin = new StringAttr(options.lineJoin, "miter");
     this.skip = false;
     this.per_feature = false;
+    this.shouldSplit = false;
   }
 
   public before(ctx: any, z: number) {
@@ -464,7 +481,10 @@ export class GroupedLineSymbolizer implements PaintSymbolizer {
       if (inside(feature) && filter(feature)) {
         const geom = transform(feature.geom);
         geom.forEach((ls) => {
-          if (verticesInPath + ls.length > MAX_VERTICES_PER_DRAW_CALL) {
+          if (
+            verticesInPath + ls.length > MAX_VERTICES_PER_DRAW_CALL &&
+            this.shouldSplit
+          ) {
             ctx.stroke();
             ctx.beginPath();
             verticesInPath = 0;
