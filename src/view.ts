@@ -278,21 +278,24 @@ export const sourceToView = (o: any) => {
       o.url,
       o.shouldCancelZooms ?? true,
       o.headers,
-      o.subdomains
+      o.subdomains,
+      o.shouldSimplify
     );
   } else if (o.url.endsWith(".pmtiles")) {
     source = new PmtilesSource(
       o.url,
       o.shouldCancelZooms ?? true,
       o.headers,
-      o.subdomains
+      o.subdomains,
+      o.shouldSimplify
     );
   } else {
     source = new ZxySource(
       o.url,
       o.shouldCancelZooms ?? true,
       o.headers,
-      o.subdomains
+      o.subdomains,
+      o.shouldSimplify
     );
   }
   const cache = new TileCache(source, (256 * 1) << level_diff);
