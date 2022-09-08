@@ -16,6 +16,12 @@ import { lineCells, simpleLabel } from "./line";
 import { Label, Layout } from "./labeler";
 
 // https://bugs.webkit.org/show_bug.cgi?id=230751
+// This ^ has now been resolved (see https://bugs.webkit.org/show_bug.cgi?id=231157)
+// PmtilesSource and ZxySource now expose a shouldSimplify boolean
+// flag that defaults to false that disables the simplification
+// Similarly, Polygon and Line symbolizers now expose a shouldSplit boolean
+// flag that defaults to false that disables splitting features
+// in multiple draw calls
 export const MAX_VERTICES_PER_DRAW_CALL = 4000;
 
 export interface GroupedGeometries {
