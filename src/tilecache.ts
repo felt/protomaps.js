@@ -91,7 +91,8 @@ const loadGeomAndBbox = (pbf: any, geometry: number, scale: number) => {
 
 function parseTile(
   buffer: ArrayBuffer,
-  tileSize: number
+  tileSize: number,
+  shouldSimplify: boolean
 ): Map<string, Feature[]> {
   let v = new VectorTile(new Protobuf(buffer));
   let result = new Map<string, Feature[]>();
@@ -109,6 +110,7 @@ function parseTile(
 
       let split: Point[][] = [];
       if (
+        shouldSimplify &&
         numVertices > MAX_VERTICES_PER_DRAW_CALL &&
         layer.feature(i).type != GeomType.Point
       ) {
@@ -149,12 +151,14 @@ export class PmtilesSource implements TileSource {
   shouldCancelZooms: boolean;
   headers: { [key: string]: string };
   subdomains: string[];
+  shouldSimplify: boolean;
 
   constructor(
     url: any,
     shouldCancelZooms: boolean,
     headers: { [key: string]: string },
-    subdomains = ["a", "b", "c"]
+    subdomains = ["a", "b", "c"],
+    shouldSimplify = false
   ) {
     if (url.url) {
       this.p = url;
@@ -165,6 +169,7 @@ export class PmtilesSource implements TileSource {
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
     this.subdomains = subdomains;
+    this.shouldSimplify = shouldSimplify;
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -195,7 +200,7 @@ export class PmtilesSource implements TileSource {
           return resp.arrayBuffer();
         })
         .then((buffer) => {
-          let result = parseTile(buffer, tileSize);
+          let result = parseTile(buffer, tileSize, this.shouldSimplify);
           resolve(result);
         })
         .catch((e) => {
@@ -211,18 +216,21 @@ export class ZxySource implements TileSource {
   shouldCancelZooms: boolean;
   headers: { [key: string]: string };
   subdomains: string[];
+  shouldSimplify: boolean;
 
   constructor(
     url: string,
     shouldCancelZooms: boolean,
     headers: { [key: string]: string },
-    subdomains = ["a", "b", "c"]
+    subdomains = ["a", "b", "c"],
+    shouldSimplify = false
   ) {
     this.url = url;
     this.controllers = [];
     this.shouldCancelZooms = shouldCancelZooms;
     this.headers = headers || {};
     this.subdomains = subdomains;
+    this.shouldSimplify = shouldSimplify;
   }
 
   public async get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>> {
@@ -254,7 +262,7 @@ export class ZxySource implements TileSource {
           return resp.arrayBuffer();
         })
         .then((buffer) => {
-          let result = parseTile(buffer, tileSize);
+          let result = parseTile(buffer, tileSize, this.shouldSimplify);
           resolve(result);
         })
         .catch((e) => {
