@@ -46,6 +46,10 @@ export interface TileSource {
   get(c: Zxy, tileSize: number): Promise<Map<string, Feature[]>>;
 }
 
+export interface RasterTileSource {
+  get(c: Zxy): Promise<Blob>;
+}
+
 // reimplement loadGeometry with a scalefactor
 // so the general tile rendering case does not need rescaling.
 const loadGeomAndBbox = (pbf: any, geometry: number, scale: number) => {
@@ -277,9 +281,77 @@ export class ZxySource implements TileSource {
   }
 }
 
+export class ZxyRasterSource implements RasterTileSource {
+  url: string;
+  controllers: any[];
+  shouldCancelZooms: boolean;
+  headers: { [key: string]: string };
+  subdomains: string[];
+
+  constructor(
+    url: string,
+    shouldCancelZooms: boolean,
+    headers: { [key: string]: string },
+    subdomains = ["a", "b", "c"]
+  ) {
+    this.url = url;
+    this.controllers = [];
+    this.shouldCancelZooms = shouldCancelZooms;
+    this.headers = headers || {};
+    this.subdomains = subdomains;
+  }
+
+  public async get(c: Zxy): Promise<Blob> {
+    if (this.shouldCancelZooms) {
+      this.controllers = this.controllers.filter((cont) => {
+        if (cont[0] != c.z) {
+          cont[1].abort();
+          return false;
+        }
+        return true;
+      });
+    }
+    let url = this.url
+      .replace("{s}", this.getSubdomain(c))
+      .replace("{z}", c.z.toString())
+      .replace("{x}", c.x.toString())
+      .replace("{y}", c.y.toString());
+    const controller = new AbortController();
+    this.controllers.push([c.z, controller]);
+    const signal = controller.signal;
+    return new Promise((resolve, reject) => {
+      fetch(url, {
+        headers: {
+          ...this.headers,
+        },
+        signal: signal,
+      })
+        .then((resp) => {
+          return resp.blob();
+        })
+        .then((blob) => {
+          resolve(blob);
+        })
+        .catch((e) => {
+          reject(e);
+        });
+    });
+  }
+
+  private getSubdomain(tileIndex: Zxy) {
+    var index = Math.abs(tileIndex.x + tileIndex.y) % this.subdomains.length;
+    return this.subdomains[index];
+  }
+}
+
 export interface CacheEntry {
   used: number;
   data: Map<string, Feature[]>;
+}
+
+export interface RasterCacheEntry {
+  used: number;
+  data: Blob;
 }
 
 let R = 6378137;
@@ -406,12 +478,14 @@ export class TileCache {
   cache: Map<string, CacheEntry>;
   inflight: Map<string, any[]>;
   tileSize: number;
+  type: string;
 
   constructor(source: TileSource, tileSize: number) {
     this.source = source;
     this.cache = new Map<string, CacheEntry>();
     this.inflight = new Map<string, any[]>();
     this.tileSize = tileSize;
+    this.type = "vector";
   }
 
   public queryFeatures(
@@ -549,5 +623,67 @@ export class TileCache {
       tile_coords: { z: zoom, x: tile_x, y: tile_y },
       point_in_tile: new Point(center.x, center.y),
     };
+  }
+}
+
+export class RasterTileCache {
+  source: RasterTileSource;
+  cache: Map<string, RasterCacheEntry>;
+  inflight: Map<string, any[]>;
+  tileSize: number;
+  type: string;
+
+  constructor(source: RasterTileSource) {
+    this.source = source;
+    this.cache = new Map<string, RasterCacheEntry>();
+    this.inflight = new Map<string, any[]>();
+    this.tileSize = 256;
+    this.type = "raster";
+  }
+
+  public async get(c: Zxy): Promise<Blob> {
+    const idx = toIndex(c);
+    return new Promise((resolve, reject) => {
+      let entry = this.cache.get(idx);
+      if (entry) {
+        entry.used = performance.now();
+        resolve(entry.data);
+      } else {
+        let ifentry = this.inflight.get(idx);
+        if (ifentry) {
+          ifentry.push([resolve, reject]);
+        } else {
+          this.inflight.set(idx, []);
+          this.source
+            .get(c)
+            .then((tile) => {
+              this.cache.set(idx, { used: performance.now(), data: tile });
+
+              let ifentry2 = this.inflight.get(idx);
+              if (ifentry2) ifentry2.forEach((f) => f[0](tile));
+              this.inflight.delete(idx);
+              resolve(tile);
+
+              if (this.cache.size >= 64) {
+                let min_used = +Infinity;
+                let min_key = undefined;
+                this.cache.forEach((value, key) => {
+                  if (value.used < min_used) {
+                    min_used = value.used;
+                    min_key = key;
+                  }
+                });
+                if (min_key) this.cache.delete(min_key);
+              }
+            })
+            .catch((e) => {
+              let ifentry2 = this.inflight.get(idx);
+              if (ifentry2) ifentry2.forEach((f) => f[1](e));
+              this.inflight.delete(idx);
+              reject(e);
+            });
+        }
+      }
+    });
   }
 }

@@ -45,6 +45,10 @@ export interface PaintSymbolizer {
   ): void;
 }
 
+export interface RasterSymbolizer {
+  draw(ctx: any, data: Blob): void;
+}
+
 export enum Justify {
   Left = 1,
   Center = 2,
@@ -156,6 +160,28 @@ export class PolygonSymbolizer implements PaintSymbolizer {
       vertices_in_path += poly.length;
     }
     if (vertices_in_path > 0) drawPath();
+  }
+}
+
+export class BasicRasterSymbolizer implements RasterSymbolizer {
+  opacity: NumberAttr;
+
+  constructor(options: any) {
+    this.opacity = new NumberAttr(options.opacity, 1);
+  }
+
+  public async draw(ctx: any, data: Blob) {
+    ctx.globalAlpha = this.opacity.get(0);
+    await new Promise<void>((resolve) => {
+      var img = new Image();
+
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0);
+        resolve();
+      };
+
+      img.src = URL.createObjectURL(data);
+    });
   }
 }
 

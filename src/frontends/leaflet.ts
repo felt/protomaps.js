@@ -49,6 +49,8 @@ export type DataSourceOptions = {
   levelDiff?: number;
   shouldCancelZooms?: boolean;
   shouldSimplify?: boolean;
+  subdomains?: string[];
+  type?: string;
 };
 export type DataSource = {
   name: string;
@@ -207,7 +209,7 @@ const leafletLayer = (options: any): any => {
 
       var painting_time = 0;
 
-      painting_time = painter(
+      painting_time = await painter(
         ctx,
         coords.z,
         [prepared_tilemap],
@@ -350,6 +352,7 @@ const leafletLayer = (options: any): any => {
       let featuresBySourceName = new Map();
       for (var [sourceName, view] of this.views) {
         if (ignoreBasemap && sourceName === BasemapLayerSourceName) continue;
+        if (sourceName.startsWith("raster")) continue;
         const z = this._map.getZoom();
         const viewFeatures = view.queryFeatures(lng, lat, z, 32);
         const zoom = Math.round(z);

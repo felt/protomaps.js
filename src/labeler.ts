@@ -1,7 +1,7 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
 import { BasemapLayerSourceName, PreparedTile, transformGeom } from "./view";
-import { Zxy, toIndex, Bbox } from "./tilecache";
+import { Zxy, toIndex, Bbox, Feature } from "./tilecache";
 // @ts-ignore
 import RBush from "rbush";
 import { LabelSymbolizer, DrawExtra } from "./symbolizer";
@@ -363,7 +363,7 @@ export class Labeler {
       let key = toIndex(pt.data_tile) + ":" + dsName;
       if (!keys_adding.has(key)) continue;
 
-      let layer = pt.data.get(rule.dataLayer);
+      let layer = (pt.data as Map<string, Feature[]>).get(rule.dataLayer);
       if (layer === undefined) continue;
 
       let feats = layer;

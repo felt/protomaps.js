@@ -1,6 +1,6 @@
 // @ts-ignore
 import Point from "@mapbox/point-geometry";
-import { IndexedLabel } from ".";
+import { IndexedLabel, RasterTileCache, TileSource, ZxyRasterSource } from ".";
 import { EventQueue, ProtomapsEvent } from "./events";
 import {
   Zxy,
@@ -22,7 +22,7 @@ import {
 export interface PreparedTile {
   z: number; // the display zoom level that it is for
   origin: Point; // the top-left corner in global CSS pixel coordinates
-  data: Map<string, Feature[]>; // return a map to Iterable
+  data: Map<string, Feature[]> | Blob; // return a map to Iterable
   scale: number; // over or underzooming scale
   dim: number; // the effective size of this tile on the zoom level
   data_tile: Zxy; // the key of the raw tile
@@ -65,12 +65,12 @@ export const wrap = (val: number, z: number) => {
  */
 export class View {
   levelDiff: number;
-  tileCache: TileCache;
+  tileCache: TileCache | RasterTileCache;
   maxDataLevel: number;
   eventQueue?: EventQueue;
 
   constructor(
-    tileCache: TileCache,
+    tileCache: TileCache | RasterTileCache,
     maxDataLevel: number,
     levelDiff: number,
     eventQueue?: EventQueue
@@ -196,14 +196,17 @@ export class View {
   ): Promise<Array<PreparedTile>> {
     this.eventQueue?.publish(ProtomapsEvent.TileFetchStart);
     let needed = this.dataTilesForBounds(display_zoom, bounds);
-    let result = await Promise.all(
-      needed.map((tt) => this.tileCache.get(tt.data_tile))
-    );
+    const promises = needed.map((tt) => {
+      return this.tileCache.get(tt.data_tile) as
+        | Promise<Blob>
+        | Promise<Map<string, Feature[]>>;
+    }) as Promise<Blob | Map<string, Feature[]>>[];
+    let result = await Promise.all(promises);
     this.eventQueue?.publish(ProtomapsEvent.TileFetchEnd);
     return result.map((data, i) => {
       let tt = needed[i];
       return {
-        data: data,
+        data: data as Map<string, Feature[]> | Blob,
         z: display_zoom,
         data_tile: tt.data_tile,
         scale: tt.scale,
@@ -232,20 +235,30 @@ export class View {
     display_zoom: number,
     brush_size_base = 16
   ) {
+    if (this.tileCache.type === "raster") return [];
     let rounded_zoom = Math.round(display_zoom);
     let data_zoom = Math.min(rounded_zoom - this.levelDiff, this.maxDataLevel);
     let brush_size = brush_size_base / (1 << (rounded_zoom - data_zoom));
-    return this.tileCache.queryFeatures(lng, lat, data_zoom, brush_size);
+    return (this.tileCache as TileCache).queryFeatures(
+      lng,
+      lat,
+      data_zoom,
+      brush_size
+    );
   }
 
   public queryFeature(dataLayer: string, id: number) {
-    return this.tileCache.queryFeature(dataLayer, id);
+    return (this.tileCache as TileCache).queryFeature(dataLayer, id);
   }
 
   public getLngLatTileInfo(lng: number, lat: number, zoom: number) {
-    const tileCoords = this.tileCache.latLngToTileCoords(lng, lat, zoom);
+    const tileCoords = (this.tileCache as TileCache).latLngToTileCoords(
+      lng,
+      lat,
+      zoom
+    );
     const transform = this.dataTileForDisplayTile(tileCoords.tile_coords);
-    const dataTileCoords = this.tileCache.latLngToTileCoords(
+    const dataTileCoords = (this.tileCache as TileCache).latLngToTileCoords(
       lng,
       lat,
       transform.data_tile.z
@@ -273,6 +286,7 @@ export const sourceToView = (o: any) => {
   const level_diff = o.levelDiff === undefined ? 2 : o.levelDiff;
   const maxDataZoom = o.maxDataZoom === undefined ? 14 : o.maxDataZoom;
   let source;
+  let cache;
   if (o.url.url) {
     source = new PmtilesSource(
       o.url,
@@ -281,6 +295,7 @@ export const sourceToView = (o: any) => {
       o.subdomains,
       o.shouldSimplify
     );
+    cache = new TileCache(source, (256 * 1) << level_diff);
   } else if (o.url.endsWith(".pmtiles")) {
     source = new PmtilesSource(
       o.url,
@@ -289,7 +304,8 @@ export const sourceToView = (o: any) => {
       o.subdomains,
       o.shouldSimplify
     );
-  } else {
+    cache = new TileCache(source, (256 * 1) << level_diff);
+  } else if (o.type === undefined || o.type === "vector") {
     source = new ZxySource(
       o.url,
       o.shouldCancelZooms ?? true,
@@ -297,8 +313,16 @@ export const sourceToView = (o: any) => {
       o.subdomains,
       o.shouldSimplify
     );
+    cache = new TileCache(source, (256 * 1) << level_diff);
+  } else {
+    source = new ZxyRasterSource(
+      o.url,
+      o.shouldCancelZooms ?? true,
+      o.headers,
+      o.subdomains
+    );
+    cache = new RasterTileCache(source);
   }
-  const cache = new TileCache(source, (256 * 1) << level_diff);
   return new View(cache, maxDataZoom, level_diff);
 };
 

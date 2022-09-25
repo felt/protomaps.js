@@ -2,7 +2,7 @@
 import Point from "@mapbox/point-geometry";
 import { Zxy, Bbox, Feature } from "./tilecache";
 import { BasemapLayerSourceName, PreparedTile, transformGeom } from "./view";
-import { PaintSymbolizer } from "./symbolizer";
+import { PaintSymbolizer, RasterSymbolizer } from "./symbolizer";
 import { Index } from "./labeler";
 
 // xray
@@ -21,7 +21,7 @@ export interface Rule {
   maxzoom?: number;
   dataSource?: string;
   dataLayer: string;
-  symbolizer: PaintSymbolizer;
+  symbolizer: PaintSymbolizer | RasterSymbolizer;
   filter?: Filter;
   extra?: any;
 }
@@ -98,7 +98,8 @@ let xray_rules = (
 ): Rule[] => {
   var rules: Rule[] = [];
   for (var [dataSource, tile] of prepared_tilemap) {
-    for (var dataLayer of tile.data.keys()) {
+    if (dataSource.startsWith("raster")) return [];
+    for (var dataLayer of (tile.data as Map<string, Feature[]>).keys()) {
       if (dataSource === xray.dataSource && dataLayer === xray.dataLayer) {
         // do nothing since the rule should go last
       } else {
@@ -113,7 +114,7 @@ let xray_rules = (
   return rules;
 };
 
-export function painter(
+export async function painter(
   ctx: any,
   z: number,
   prepared_tilemaps: Map<string, PreparedTile>[],
@@ -158,42 +159,53 @@ export function painter(
         rule.dataSource || BasemapLayerSourceName
       );
       if (!prepared_tile) continue;
-      var layer = prepared_tile.data.get(rule.dataLayer);
-      if (layer === undefined) continue;
-      if (rule.symbolizer.before) rule.symbolizer.before(ctx, prepared_tile.z);
-
-      ctx.save();
-      let po = prepared_tile.origin;
-      let dim = prepared_tile.dim;
-      let ps = prepared_tile.scale;
-      ctx.translate(po.x - origin.x, po.y - origin.y);
-
-      if (rule.symbolizer.drawGrouped) {
-        rule.symbolizer.drawGrouped(
-          ctx,
-          prepared_tile.z,
-          layer,
-          (f) => isFeatureInTile(f, ps, po, bbox),
-          ps != 1 ? (g) => transformGeom(g, ps, new Point(0, 0)) : (g) => g,
-          (f) =>
-            rule.filter
-              ? rule.filter((prepared_tile as PreparedTile).z, f)
-              : true
+      if (rule.dataSource?.startsWith("raster")) {
+        var data = prepared_tile.data as Blob;
+        ctx.save();
+        if (rule.symbolizer.draw)
+          await (rule.symbolizer as RasterSymbolizer).draw(ctx, data);
+        ctx.restore();
+      } else {
+        const symbolizer = rule.symbolizer as PaintSymbolizer;
+        var layer = (prepared_tile.data as Map<string, Feature[]>).get(
+          rule.dataLayer
         );
-      } else if (rule.symbolizer.draw) {
-        for (var feature of layer) {
-          let geom = feature.geom;
-          if (!isFeatureInTile(feature, ps, po, bbox)) {
-            continue;
+        if (layer === undefined) continue;
+        if (symbolizer.before) symbolizer.before(ctx, prepared_tile.z);
+
+        ctx.save();
+        let po = prepared_tile.origin;
+        let dim = prepared_tile.dim;
+        let ps = prepared_tile.scale;
+        ctx.translate(po.x - origin.x, po.y - origin.y);
+
+        if (symbolizer.drawGrouped) {
+          symbolizer.drawGrouped(
+            ctx,
+            prepared_tile.z,
+            layer,
+            (f) => isFeatureInTile(f, ps, po, bbox),
+            ps != 1 ? (g) => transformGeom(g, ps, new Point(0, 0)) : (g) => g,
+            (f) =>
+              rule.filter
+                ? rule.filter((prepared_tile as PreparedTile).z, f)
+                : true
+          );
+        } else if (symbolizer.draw) {
+          for (var feature of layer) {
+            let geom = feature.geom;
+            if (!isFeatureInTile(feature, ps, po, bbox)) {
+              continue;
+            }
+            if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
+            if (ps != 1) {
+              geom = transformGeom(geom, ps, new Point(0, 0));
+            }
+            symbolizer.draw(ctx, geom, prepared_tile.z, feature);
           }
-          if (rule.filter && !rule.filter(prepared_tile.z, feature)) continue;
-          if (ps != 1) {
-            geom = transformGeom(geom, ps, new Point(0, 0));
-          }
-          rule.symbolizer.draw(ctx, geom, prepared_tile.z, feature);
         }
+        ctx.restore();
       }
-      ctx.restore();
     }
   }
 
